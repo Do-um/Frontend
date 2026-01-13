@@ -1,0 +1,69 @@
+'use client';
+
+import React from 'react';
+import Link from 'next/link';
+
+const HeaderNav: React.FC = () => {
+  const navigation = [
+    { name: '소개', href: '/#about' },
+    { name: '활동', href: '/activity' },
+    { name: '모집', href: '/recruit' },
+    { name: '문의', href: '/contact' },
+    { name: '로그인', href: '/login' },
+  ];
+
+  const activityItems = [
+    { name: '주요활동', href: '/activity' },
+    { name: '스터디', href: '/activity/study' },
+    { name: '프로젝트', href: '/activity/project' },
+    { name: '모각코', href: '/activity/mogakko' },
+  ];
+
+  return (
+    <header className="border-b border-[#e2d8c9] bg-[#f7f2e9]/80 backdrop-blur">
+      <div className="container mx-auto flex items-center justify-between px-4 py-4">
+        <Link href="/" className="flex items-center gap-2">
+          <img
+            src="/logo.png"
+            alt="Do,um logo"
+            className="h-7 w-7 object-contain"
+          />
+          <span className="text-sm font-semibold tracking-wide">Do,um</span>
+        </Link>
+
+        <nav className="hidden items-center gap-6 text-xs font-semibold uppercase text-[#4b4b4b] sm:flex">
+          {navigation.map((item) => {
+            if (item.name !== '활동') {
+              return (
+                <Link key={item.name} href={item.href} className="transition-colors hover:text-[#7aa4e8]">
+                  {item.name}
+                </Link>
+              );
+            }
+
+            return (
+              <div key={item.name} className="relative group">
+                <Link href={item.href} className="transition-colors hover:text-[#7aa4e8]">
+                  {item.name}
+                </Link>
+                <div className="pointer-events-none absolute right-0 top-full mt-2 w-36 rounded-lg border border-[#e2d8c9] bg-white/90 py-2 text-left text-[11px] font-semibold text-[#4b4b4b] opacity-0 shadow-lg backdrop-blur transition group-hover:pointer-events-auto group-hover:opacity-100">
+                  {activityItems.map((subItem) => (
+                    <Link
+                      key={subItem.name}
+                      href={subItem.href}
+                      className="block px-3 py-2 transition-colors hover:bg-[#f7efe6] hover:text-[#7aa4e8]"
+                    >
+                      {subItem.name}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </nav>
+      </div>
+    </header>
+  );
+};
+
+export { HeaderNav };
