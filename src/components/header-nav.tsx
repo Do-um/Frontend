@@ -1,69 +1,103 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import Link from "next/link"
-import Image from "next/image"
+import React, { useState } from 'react';
+import Link from 'next/link';
 
-// ========== 헤더 네비게이션 컴포넌트 ==========
-// 모든 페이지에서 공통으로 사용하는 헤더 컴포넌트
-// 소개 버튼에 드롭다운 메뉴 포함
+const HeaderNav: React.FC = () => {
+  const navigation = [
+    { name: '소개', href: '/#about' },
+    { name: '활동', href: '/activity' },
+    { name: '모집', href: '/recruit' },
+    { name: '대여', href: '/rental' },
+    { name: '문의', href: '/contact' },
+    { name: '로그인', href: '/login' },
+  ];
 
-export function HeaderNav() {
-  // 드롭다운 열림/닫힘 상태
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const activityItems = [
+    { name: '주요활동', href: '/activity' },
+    { name: '스터디', href: '/activity/study' },
+    { name: '프로젝트', href: '/activity/project' },
+    { name: '모각코', href: '/activity/mogakko' },
+  ];
 
   const [isActivityOpen, setIsActivityOpen] = useState(false);
 
   return (
-    <header className="w-full border-b bg-white px-8 py-4">
-      <div className="mx-auto flex max-w-[1400px] items-center justify-between">
-        {/* 로고 */}
-        <Link href="/" className="flex-shrink-0 transition-opacity hover:opacity-80">
-          <Image src="/logo.png" alt="Do,um 로고" width={45} height={45} priority />
+    <header className="border-b border-[#e2d8c9] bg-[#f7f2e9]/80 backdrop-blur">
+      <div className="container mx-auto flex items-center justify-between px-4 py-4">
+        <Link href="/" className="flex items-center gap-2">
+          <img
+            src="/logo.png"
+            alt="Do,um logo"
+            className="h-7 w-7 object-contain"
+          />
+          <span className="text-sm font-semibold tracking-wide">Do,um</span>
         </Link>
 
-        {/* 네비게이션 메뉴 - gap-8을 gap-6으로 줄임 */}
-        <nav className="flex items-center gap-6">
-          <div
-            className="relative"
-            onMouseEnter={() => setIsDropdownOpen(true)}
-            onMouseLeave={() => setIsDropdownOpen(false)}
-          >
-            <button className="text-sm font-medium transition-colors hover:text-primary px-4 py-3">소개</button>
+        <nav className="hidden items-center gap-6 text-xs font-semibold uppercase text-[#4b4b4b] sm:flex">
+          {navigation.map((item) => {
+            if (item.name !== '활동') {
+              return (
+                <Link key={item.name} href={item.href} className="transition-colors hover:text-[#7aa4e8]">
+                  {item.name}
+                </Link>
+              );
+            }
 
-            {isDropdownOpen && (
-              <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1 w-auto rounded-md border bg-white shadow-md py-1 z-50">
+            return (
+              <div
+                key={item.name}
+                className="relative"
+                onMouseEnter={() => setIsActivityOpen(true)}
+                onMouseLeave={() => setIsActivityOpen(false)}
+                onFocus={() => setIsActivityOpen(true)}
+                onBlur={(event) => {
+                  if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                    setIsActivityOpen(false);
+                  }
+                }}
+              >
                 <Link
-                  href="/"
-                  className="block px-3 py-2 text-sm font-medium transition-colors hover:bg-gray-100 whitespace-nowrap"
+                  href={item.href}
+                  className="transition-colors hover:text-[#7aa4e8]"
+                  onClick={(event) => {
+                    if (!isActivityOpen) {
+                      event.preventDefault();
+                      setIsActivityOpen(true);
+                    }
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Escape') {
+                      setIsActivityOpen(false);
+                    }
+                  }}
                 >
-                  동아리
+                  {item.name}
                 </Link>
-                <Link
-                  href="/team"
-                  className="block px-3 py-2 text-sm font-medium transition-colors hover:bg-gray-100 whitespace-nowrap"
+                <div
+                  className={`absolute left-1/2 top-full mt-2 w-40 -translate-x-1/2 rounded-lg border border-[#e2d8c9] bg-white/90 py-2 text-left text-[11px] font-semibold text-[#4b4b4b] shadow-lg backdrop-blur transition ${
+                    isActivityOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+                  }`}
                 >
-                  운영진
-                </Link>
+                  <span className="absolute -top-3 left-0 h-3 w-full" />
+                  {activityItems.map((subItem) => (
+                    <Link
+                      key={subItem.name}
+                      href={subItem.href}
+                      className="block px-3 py-2 transition-colors hover:bg-[#f7efe6] hover:text-[#7aa4e8]"
+                      onClick={() => setIsActivityOpen(false)}
+                    >
+                      {subItem.name}
+                    </Link>
+                  ))}
+                </div>
               </div>
-            )}
-          </div>
-
-          <Link href="/#activities" className="text-sm font-medium transition-colors hover:text-primary px-2 py-3">
-            활동
-          </Link>
-          <Link href="/recruit" className="text-sm font-medium transition-colors hover:text-primary px-2 py-3">
-            모집
-          </Link>
-          <Link href="#" className="text-sm font-medium transition-colors hover:text-primary px-2 py-3">
-            대여
-          </Link>
-          <Link href="/login" className="text-sm font-medium transition-colors hover:text-primary px-2 py-3">
-            로그인
-          </Link>
+            );
+          })}
         </nav>
       </div>
     </header>
-  )
-}
+  );
+};
 
+export { HeaderNav };
