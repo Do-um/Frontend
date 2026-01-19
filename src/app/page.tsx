@@ -1,9 +1,7 @@
 "use client"
 import Image from "next/image"
-import { useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { HeaderNav } from "@/components/header-nav"
-import { useGetIntroduces } from "@/api/introduce/get/useGetIntroduces"
 
 interface ActivityHistory {
   id: number
@@ -14,18 +12,35 @@ interface ActivityHistory {
 }
 
 export default function Home() {
-  const { introduces, isLoading, errorMessage } = useGetIntroduces()
-
-  const activityHistories: ActivityHistory[] = useMemo(
-    () =>
-      introduces.map((introduce) => ({
-        id: introduce.id,
-        title: introduce.activityId,
-        description: introduce.description,
-        imageUrl: introduce.activityImage || "/placeholder.svg?height=400&width=600",
-      })),
-    [introduces]
-  )
+  // TODO: 백엔드 API 연동 시 아래 부분을 fetch 또는 SWR로 교체
+  // 예시: const { data: activityHistories } = useSWR('/api/activity-histories', { revalidateOnFocus: false })
+  // API 응답 예시: GET /api/activity-histories -> [{ id, title, description, imageUrl }]
+  const activityHistories: ActivityHistory[] = [
+    {
+      id: 1,
+      title: "", // 관리자가 입력
+      description: "", // 관리자가 입력
+      imageUrl: "/placeholder.svg?height=400&width=600", // 관리자가 업로드한 이미지
+    },
+    {
+      id: 2,
+      title: "", // 관리자가 입력
+      description: "", // 관리자가 입력
+      imageUrl: "/placeholder.svg?height=400&width=600", // 관리자가 업로드한 이미지
+    },
+    {
+      id: 3,
+      title: "", // 관리자가 입력
+      description: "", // 관리자가 입력
+      imageUrl: "/placeholder.svg?height=400&width=600", // 관리자가 업로드한 이미지
+    },
+    {
+      id: 4,
+      title: "", // 관리자가 입력
+      description: "", // 관리자가 입력
+      imageUrl: "/placeholder.svg?height=400&width=600", // 관리자가 업로드한 이미지
+    },
+  ]
   // 최대 4개까지만 표시
   const displayedActivities = activityHistories.slice(0, 4)
 
@@ -104,11 +119,6 @@ export default function Home() {
                 <br />
                 걸어왔을까요?
               </h3>
-
-              {isLoading && <p className="text-sm text-muted-foreground">주요 활동을 불러오는 중입니다.</p>}
-              {!isLoading && errorMessage && (
-                <p className="text-sm text-red-500">{errorMessage}</p>
-              )}
 
               <div className="space-y-12">
                 {displayedActivities.map((activity, index) => (
