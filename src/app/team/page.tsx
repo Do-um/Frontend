@@ -32,7 +32,10 @@ export default function TeamPage() {
   const publicity: TeamMember[] = [{ id: "5", name: "김국민", photo: "", github: "", instagram: "" }]
 
   return (
-    <div className="min-h-screen">
+    <div 
+      className="min-h-screen bg-cover bg-center bg-no-repeat bg-fixed"
+      style={{ backgroundImage: "url('/team-bg.png')" }}
+    >
       {/* 헤더 */}
       <HeaderNav />
 
@@ -92,12 +95,12 @@ export default function TeamPage() {
       </main>
 
       {/* 푸터 */}
-      <footer className="border-t py-12">
-        <div className="mx-auto max-w-7xl px-6 text-center space-y-2">
-          <p className="text-2xl font-bold">DO,UM</p>
-          <p className="text-sm text-muted-foreground">소프트웨어융합대학 교육봉사 동아리</p>
-          <p className="text-sm">Contact: doum@kookmin.ac.kr</p>
-          <p className="text-xs text-muted-foreground mt-4">© DO,UM</p>
+      <footer className="border-t border-gray-300 bg-transparent py-10">
+        <div className="mx-auto max-w-4xl px-4 text-center">
+          <p className="mb-2 text-base font-bold text-gray-900">DO,UM</p>
+          <p className="mb-1 text-xs text-gray-600">소프트웨어융합대학 코딩봉사 동아리</p>
+          <p className="mb-4 text-xs text-gray-600">Contact: doum@kookmin.ac.kr</p>
+          <p className="text-xs text-gray-500">© DO,UM</p>
         </div>
       </footer>
     </div>
@@ -158,3 +161,4 @@ function MemberCard({ member }: { member: TeamMember }) {
     </div>
   )
 }
+
