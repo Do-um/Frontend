@@ -11,7 +11,10 @@ export function LoginForm() {
   return (
     // flex flex-col: 세로 방향 플렉스박스 (헤더 위, 로그인 카드 아래)
     // min-h-screen: 최소 높이를 화면 전체로 설정
-    <div className="flex min-h-screen flex-col">
+    <div 
+      className="flex min-h-screen flex-col bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: "url('/login-bg.png')" }}
+    >
       {/* ========== 헤더 영역 ==========
           - 로그인 페이지 상단 네비게이션
           - 홈 페이지와 동일한 스타일 유지
@@ -26,7 +29,7 @@ export function LoginForm() {
           - p-6: 전체 패딩 24px
       */}
       <main className="flex flex-1 items-center justify-center p-6">
-        <div className="absolute inset-0 -z-10 bg-gradient-to-br from-primary/5 via-background to-secondary/10" />
+
 
         {/* 로그인 카드
             - max-w-md: 최대 너비 28rem (448px)
