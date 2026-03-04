@@ -1,7 +1,23 @@
 "use client"
 import Image from "next/image"
+import { useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { HeaderNav } from "@/components/header-nav"
+
+function pickToken(params: URLSearchParams) {
+  return (
+    params.get("access_token") ||
+    params.get("accessToken") ||
+    params.get("token") ||
+    params.get("jwt") ||
+    ""
+  )
+}
+
+function pickRefreshToken(params: URLSearchParams) {
+  return params.get("refresh_token") || params.get("refreshToken") || ""
+}
 
 interface ActivityHistory {
   id: number
@@ -11,6 +27,39 @@ interface ActivityHistory {
 }
 
 export default function Home() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    if (!searchParams) {
+      return
+    }
+
+    const token = pickToken(searchParams)
+    const refreshToken = pickRefreshToken(searchParams)
+    const error = searchParams.get("error") || searchParams.get("error_description")
+
+    if (!token && !error) {
+      return
+    }
+
+    if (error) {
+      router.replace("/")
+      return
+    }
+
+    try {
+      localStorage.setItem("access_token", token)
+      if (refreshToken) {
+        localStorage.setItem("refresh_token", refreshToken)
+      }
+      router.replace("/")
+    } catch (err) {
+      console.error(err)
+      router.replace("/")
+    }
+  }, [router, searchParams])
+
   // TODO: 백엔드 API 연동 시 fetch 또는 SWR로 교체
   const activityHistories: ActivityHistory[] = [
     { id: 1, title: "", description: "", imageUrl: "" },
@@ -136,31 +185,40 @@ export default function Home() {
       {/* ========== 스터디 섹션 ========== */}
       <section className="px-4 py-12 lg:px-8">
         <div className="mx-auto max-w-6xl">
-          <div className="mb-4">
-            <p className="text-xs text-gray-600">자기개발을 위한</p>
-            <p className="text-base font-bold text-gray-900">다양한 스터디와 친목활동 진행</p>
+          <div className="mb-4 ml-6">
+            <p className="text-sm text-gray-600">자기개발을 위한</p>
+            <p className="text-lg font-bold text-gray-900">다양한 스터디와 친목활동 진행</p>
           </div>
 
           {/* Learn, Grow, Share + 이미지 영역 */}
           <div className="flex items-start justify-between">
             {/* 왼쪽: Learn, Grow, Share 텍스트 */}
-            <div className="space-y-5">
+            <div className="ml-6 space-y-5">
               <div>
-                <p className="text-base font-bold text-gray-900">Learn</p>
-                <p className="text-sm text-gray-600">기초부터 차근차근, 함께 배우는 스터디</p>
+                <p className="text-lg font-bold text-gray-900">Learn</p>
+                <p className="text-base text-gray-600">기초부터 차근차근, 함께 배우는 스터디</p>
               </div>
               <div>
-                <p className="text-base font-bold text-gray-900">Grow</p>
-                <p className="text-sm text-gray-600">알고리즘·프로젝트로 쌓는 실력</p>
+                <p className="text-lg font-bold text-gray-900">Grow</p>
+                <p className="text-base text-gray-600">알고리즘·프로젝트로 쌓는 실력</p>
               </div>
               <div>
-                <p className="text-base font-bold text-gray-900">Share</p>
-                <p className="text-sm text-gray-600">배운 기술로 실천하는 SW 봉사</p>
+                <p className="text-lg font-bold text-gray-900">Share</p>
+                <p className="text-base text-gray-600">배운 기술로 실천하는 SW 봉사</p>
               </div>
             </div>
 
-            {/* 오른쪽: 이미지 플레이스홀더 (나중에 사진 추가) */}
-            <div className="mr-16 h-48 w-72 rounded-lg bg-[#F0E4DC]" />
+            {/* 오른쪽: 기술 스택 이미지 */}
+            <div className="mr-6 -mt-10 h-100 w-132 lg:h-72 lg:w-[28rem]">
+              <Image
+                src="/skill.png"
+                alt="기술 스택 아이콘"
+                width={600}
+                height={472}
+                className="h-full w-full rounded-lg object-contain"
+                priority
+              />
+            </div>
           </div>
         </div>
       </section>
@@ -177,3 +235,4 @@ export default function Home() {
     </div>
   )
 }
+
