@@ -31,7 +31,7 @@ export function HeaderNav() {
             onMouseEnter={() => setIsIntroOpen(true)}
             onMouseLeave={() => setIsIntroOpen(false)}
           >
-            <button className="text-sm font-medium transition-colors hover:text-primary px-4 py-3">소개</button>
+            <button className="text-sm font-medium transition-colors hover:text-primary px-3 py-4">소개</button>
 
             {/* 소개 드롭다운 */}
             {isIntroOpen && (
@@ -58,7 +58,7 @@ export function HeaderNav() {
             onMouseEnter={() => setIsActivitiesOpen(true)}
             onMouseLeave={() => setIsActivitiesOpen(false)}
           >
-            <button className="text-sm font-medium transition-colors hover:text-primary px-2 py-3">활동</button>
+            <button className="text-sm font-medium transition-colors hover:text-primary px-3 py-4">활동</button>
 
             {/* 활동 드롭다운 */}
             {isActivitiesOpen && (
@@ -90,13 +90,13 @@ export function HeaderNav() {
               </div>
             )}
           </div>
-          <Link href="/recruit" className="text-sm font-medium transition-colors hover:text-primary px-2 py-3">
+          <Link href="/recruit" className="text-sm font-medium transition-colors hover:text-primary px-3 py-4">
             모집
           </Link>
-          <Link href="/rental" className="text-sm font-medium transition-colors hover:text-primary px-2 py-3">
+          <Link href="/rental" className="text-sm font-medium transition-colors hover:text-primary px-3 py-4">
             대여
           </Link>
-          <Link href="/login" className="text-sm font-medium transition-colors hover:text-primary px-2 py-3">
+          <Link href="/login" className="text-sm font-medium transition-colors hover:text-primary px-3 py-4">
             로그인
           </Link>
         </nav>
