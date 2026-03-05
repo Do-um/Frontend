@@ -1,8 +1,24 @@
-export default function ActivitiesProjectsPage() {
+import { ActivityBoard } from "@/components/activities/activity-board"
+import { fetchIntroduceCardItems } from "@/lib/introduce-content"
+import type { IntroduceCardItem } from "@/lib/introduce-content"
+
+export default async function ActivitiesProjectsPage() {
+  let items: IntroduceCardItem[] = []
+  let errorMessage: string | null = null
+
+  try {
+    items = await fetchIntroduceCardItems("project")
+  } catch (error) {
+    errorMessage = error instanceof Error ? error.message : "프로젝트 데이터를 불러오지 못했습니다."
+  }
+
   return (
-    <main className="mx-auto max-w-4xl px-6 py-16">
-      <h1 className="text-2xl font-bold text-gray-900">프로젝트</h1>
-      <p className="mt-3 text-sm text-gray-600">곧 콘텐츠가 추가될 예정입니다.</p>
-    </main>
+    <ActivityBoard
+      title="Our Project"
+      subtitle="우리가 만든 결과물, 우리가 키우는 경험"
+      items={items}
+      errorMessage={errorMessage}
+      emptyMessage="activityId 또는 설명에 '프로젝트' 키워드가 포함된 데이터가 없습니다."
+    />
   )
 }

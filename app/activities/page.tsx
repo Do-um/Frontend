@@ -1,11 +1,24 @@
-export default function ActivitiesPage() {
+import { ActivityBoard } from "@/components/activities/activity-board"
+import { fetchIntroduceCardItems } from "@/lib/introduce-content"
+import type { IntroduceCardItem } from "@/lib/introduce-content"
+
+export default async function ActivitiesPage() {
+  let items: IntroduceCardItem[] = []
+  let errorMessage: string | null = null
+
+  try {
+    items = await fetchIntroduceCardItems("activity")
+  } catch (error) {
+    errorMessage = error instanceof Error ? error.message : "주요활동 데이터를 불러오지 못했습니다."
+  }
+
   return (
-    // 주요활동 소개 페이지의 기본 레이아웃입니다.
-    <main className="mx-auto max-w-4xl px-6 py-16">
-      {/* 페이지 제목 */}
-      <h1 className="text-2xl font-bold text-gray-900">주요활동</h1>
-      {/* 추후 실제 활동 콘텐츠가 들어갈 안내 문구 */}
-      <p className="mt-3 text-sm text-gray-600">곧 콘텐츠가 추가될 예정입니다.</p>
-    </main>
+    <ActivityBoard
+      title="Our Activity"
+      subtitle="우리가 해온 길, 우리가 가는 길"
+      items={items}
+      errorMessage={errorMessage}
+      emptyMessage="등록된 주요활동이 없습니다."
+    />
   )
 }
