@@ -5,6 +5,8 @@
 
 "use client"
 
+import { useSearchParams } from "next/navigation"
+
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { HeaderNav } from "@/components/header-nav"
@@ -12,6 +14,16 @@ import { buildApiUrl } from "@/lib/api"
 
 export function LoginForm() {
   const redirectUri = process.env.NEXT_PUBLIC_OAUTH_REDIRECT_URI
+  const searchParams = useSearchParams()
+  const error = searchParams.get("error")
+  const allowedDomain = searchParams.get("allowedDomain") || "@kookmin.ac.kr"
+
+  const errorMessage =
+    error === "restricted_domain"
+      ? `국민대학교 Google 계정(${allowedDomain})만 로그인할 수 있습니다.`
+      : error
+        ? "Google 로그인에 실패했습니다. 다시 시도해 주세요."
+        : ""
 
   const handleGoogleLogin = () => {
     try {
@@ -75,6 +87,12 @@ export function LoginForm() {
               */}
               <p className="mt-4 text-sm text-muted-foreground">KookminUniv sw 교육봉사 동아리</p>
             </div>
+
+            {errorMessage ? (
+              <div className="w-full max-w-sm rounded-2xl border border-[#f1c9c9] bg-[#fff4f4] px-4 py-3 text-center text-sm text-[#9a3b3b]">
+                {errorMessage}
+              </div>
+            ) : null}
 
             {/* ========== Google 로그인 버튼 ==========
                 - variant="outline": 테두리만 있는 버튼 스타일
@@ -140,8 +158,8 @@ export function LoginForm() {
                 - text-muted-foreground: 흐린 색상
             */}
             <div className="text-center">
-              <p className="text-sm text-muted-foreground">KookminUniv 이메일로 로그인하세요</p>
-              <p className="text-sm text-muted-foreground">(@kookmin.ac.kr)</p>
+              <p className="text-sm text-muted-foreground">Google 로그인만 지원합니다</p>
+              <p className="text-sm text-muted-foreground">국민대학교 메일(@kookmin.ac.kr)만 로그인 가능합니다</p>
             </div>
           </div>
         </Card>

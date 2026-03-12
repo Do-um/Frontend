@@ -1,163 +1,416 @@
 "use client"
 
-import { HeaderNav } from "@/components/header-nav"
 import Image from "next/image"
 import Link from "next/link"
+import { useEffect, useMemo, useState, type ReactNode } from "react"
+import { Github, Instagram, PencilLine, Plus, Trash2 } from "lucide-react"
 
-// ========== 팀원 정보 타입 정의 ==========
-type TeamMember = {
-  id: string
-  name: string // 이름 - 관리자 수정 가능
-  photo: string // 프로필 사진 URL - 관리자 업로드 가능
-  github?: string // Github URL (선택)
-  instagram?: string // Instagram URL (선택)
+import { StaffEditorDialog } from "@/components/pages/staff-editor-dialog"
+import { HeaderNav } from "@/components/header-nav"
+import { SiteFooter } from "@/components/site-footer"
+import { Button } from "@/components/ui/button"
+import { useAdminSession } from "@/hooks/use-admin-session"
+import { getStoredAccessToken } from "@/lib/auth"
+import { deleteStaff, fetchStaff, type StaffItem } from "@/lib/content-api"
+
+const departmentOrder = ["회장단", "총무부", "기획부", "홍보부"]
+const leadRoleOrder = ["회장", "부회장", "고문"]
+
+function normalizeDepartment(member: StaffItem) {
+  const department = member.department.trim()
+  const role = member.role.trim()
+
+  if (department === "회장단" || department === "회장" || department === "부회장") {
+    return "회장단"
+  }
+
+  if (role === "회장" || role === "부회장") {
+    return "회장단"
+  }
+
+  if (department.includes("총무")) {
+    return "총무부"
+  }
+
+  if (department.includes("기획")) {
+    return "기획부"
+  }
+
+  if (department.includes("홍보")) {
+    return "홍보부"
+  }
+
+  return department
 }
 
-// ========== 운영진 소개 페이지 ==========
+function normalizeExternalUrl(url: string | null) {
+  if (!url) {
+    return ""
+  }
+
+  const trimmed = url.trim()
+  if (!trimmed) {
+    return ""
+  }
+
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed
+  }
+
+  return `https://${trimmed}`
+}
+
+function getMemberSortOrder(member: StaffItem) {
+  const normalizedDepartment = normalizeDepartment(member)
+  const normalizedRole = member.role.trim()
+
+  if (normalizedDepartment === "회장단") {
+    const roleIndex = leadRoleOrder.indexOf(normalizedRole)
+    return roleIndex >= 0 ? roleIndex : leadRoleOrder.length
+  }
+
+  return Number.MAX_SAFE_INTEGER
+}
+
 export default function TeamPage() {
-  // TODO: 백엔드 API에서 팀원 데이터 받아오기
-  // 예: const { data: teamData } = useSWR('/api/team')
-  // fetch('/api/team') 또는 SWR 사용해서 관리자가 추가/수정한 데이터 가져오기
+  const { isAdmin } = useAdminSession()
+  const [staff, setStaff] = useState<StaffItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+  const [editorState, setEditorState] = useState<{
+    mode: "create" | "edit"
+    staff: StaffItem | null
+  } | null>(null)
 
-  // 더미 데이터 - 관리자가 백엔드에서 추가/수정 가능
-  const executives: TeamMember[] = [
-    { id: "1", name: "김국민", photo: "", github: "", instagram: "" },
-    { id: "2", name: "김국민", photo: "", github: "", instagram: "" },
-  ]
+  useEffect(() => {
+    let cancelled = false
 
-  const generalAffairs: TeamMember[] = [{ id: "3", name: "김국민", photo: "", github: "", instagram: "" }]
+    async function loadStaff() {
+      setLoading(true)
+      setError("")
 
-  const planning: TeamMember[] = [{ id: "4", name: "김국민", photo: "", github: "", instagram: "" }]
+      try {
+        const response = await fetchStaff()
+        if (!cancelled) {
+          setStaff(response)
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "운영진 정보를 불러오지 못했습니다.")
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false)
+        }
+      }
+    }
 
-  const publicity: TeamMember[] = [{ id: "5", name: "김국민", photo: "", github: "", instagram: "" }]
+    void loadStaff()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const groupedStaff = useMemo(() => {
+    const grouped = new Map<string, StaffItem[]>()
+
+    for (const item of staff) {
+      const normalizedDepartment = normalizeDepartment(item)
+      const normalizedItem =
+        normalizedDepartment === item.department
+          ? item
+          : {
+              ...item,
+              department: normalizedDepartment,
+            }
+      const group = grouped.get(normalizedDepartment) ?? []
+      group.push(normalizedItem)
+      grouped.set(normalizedDepartment, group)
+    }
+
+    const orderedKeys = [
+      ...departmentOrder.filter((department) => grouped.has(department)),
+      ...[...grouped.keys()].filter((department) => !departmentOrder.includes(department)).sort(),
+    ]
+
+    return orderedKeys.map((department) => ({
+      department,
+      members: [...(grouped.get(department) ?? [])].sort((left, right) => {
+        const orderDiff = getMemberSortOrder(left) - getMemberSortOrder(right)
+        if (orderDiff !== 0) {
+          return orderDiff
+        }
+        return left.staffId - right.staffId
+      }),
+    }))
+  }, [staff])
+
+  const leadSection = groupedStaff.find((section) => section.department === "회장단") ?? null
+  const fixedSecondarySections = departmentOrder
+    .filter((department) => department !== "회장단")
+    .map((department) => ({
+      department,
+      members: groupedStaff.find((section) => section.department === department)?.members ?? [],
+    }))
+  const extraSections = groupedStaff.filter((section) => !departmentOrder.includes(section.department))
+  const secondarySections = [...fixedSecondarySections, ...extraSections]
+  const leadSectionGridClass = useMemo(() => {
+    const leadCount = leadSection?.members.length ?? 0
+
+    if (leadCount <= 1) {
+      return "max-w-[420px] grid-cols-1"
+    }
+
+    if (leadCount === 2) {
+      return "max-w-[860px] grid-cols-1 md:grid-cols-2"
+    }
+
+    return "max-w-[1280px] grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
+  }, [leadSection])
+
+  function handleStaffSaved(savedStaff: StaffItem) {
+    setStaff((current) => {
+      const next = [...current.filter((item) => item.staffId !== savedStaff.staffId), savedStaff]
+      return next.sort((left, right) => left.staffId - right.staffId)
+    })
+  }
+
+  async function handleStaffDelete(target: StaffItem) {
+    const token = getStoredAccessToken()
+    if (!token) {
+      setError("관리자 로그인이 필요합니다.")
+      return
+    }
+
+    if (!window.confirm(`${target.name} 운영진 정보를 삭제할까요?`)) {
+      return
+    }
+
+    try {
+      await deleteStaff(target.staffId, token)
+      setStaff((current) => current.filter((item) => item.staffId !== target.staffId))
+      if (editorState?.staff?.staffId === target.staffId) {
+        setEditorState(null)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "운영진 삭제 중 오류가 발생했습니다.")
+    }
+  }
 
   return (
-    <div 
+    <div
       className="min-h-screen bg-cover bg-center bg-no-repeat bg-fixed"
       style={{ backgroundImage: "url('/team-bg.png')" }}
     >
-      {/* 헤더 */}
       <HeaderNav />
 
-      {/* 메인 컨텐츠 */}
-      <main className="mx-auto max-w-7xl px-6 py-16">
-        {/* 히어로 섹션 - 로고와 타이틀 */}
-        <div className="flex flex-col items-center text-center mb-20">
-          <div className="animate-float mb-8">
-            <Image src="/logo.png" alt="Do,um 로고" width={120} height={120} />
+      <main className="mx-auto max-w-[1280px] px-6 pb-24 pt-10">
+        <div className="mb-[72px] flex flex-col items-center text-center">
+          <div className="animate-float mb-10">
+            <Image src="/logo.png" alt="Do,um 로고" width={150} height={150} />
           </div>
-          <h1 className="text-5xl font-bold mb-4">GROW TO GIVE</h1>
-          <p className="text-xl text-muted-foreground">Introduction of Do,um team members</p>
+          <h1 className="mb-4 text-[3.4rem] font-black tracking-[-0.04em] text-black sm:text-[4.2rem]">
+            GROW TO GIVE
+          </h1>
+          <p className="text-[1.4rem] text-[#6f6f6f] sm:text-[1.9rem]">
+            Introduction of Do,um team members
+          </p>
+          {isAdmin ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setEditorState({ mode: "create", staff: null })}
+              className="mt-8 rounded-full border-[#bccfd9] bg-white/80 px-4 text-[#355264] hover:bg-white"
+            >
+              <Plus className="size-4" />
+              추가하기
+            </Button>
+          ) : null}
         </div>
 
-        {/* 회장단 */}
-        <section className="mb-20">
-          <h2 className="text-3xl font-bold text-center mb-10">&lt;회장단&gt;</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
-            {executives.map((member) => (
-              <MemberCard key={member.id} member={member} />
-            ))}
+        {loading ? (
+          <div className="rounded-[28px] border border-black/15 bg-white/75 px-6 py-8 text-center text-sm text-muted-foreground">
+            운영진 정보를 불러오는 중입니다...
           </div>
-        </section>
+        ) : error ? (
+          <div className="rounded-[28px] border border-[#f1c9c9] bg-[#fff4f4] px-6 py-8 text-center text-sm text-[#9a3b3b]">
+            {error}
+          </div>
+        ) : (
+          <div className="space-y-[88px]">
+            {leadSection ? (
+              <section>
+                <h2 className="mb-8 text-center text-[2rem] font-black tracking-[-0.03em] text-black sm:text-[2.35rem]">
+                  &lt;회장단&gt;
+                </h2>
+                <div className={`mx-auto grid gap-7 ${leadSectionGridClass}`}>
+                  {leadSection.members.map((member) => (
+                    <MemberCard
+                      key={member.staffId}
+                      member={member}
+                      isAdmin={isAdmin}
+                      onEdit={() => setEditorState({ mode: "edit", staff: member })}
+                      onDelete={() => handleStaffDelete(member)}
+                    />
+                  ))}
+                </div>
+              </section>
+            ) : null}
 
-        {/* 총무부, 기획부, 홍보부 */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-20">
-          {/* 총무부 */}
-          <div>
-            <h2 className="text-3xl font-bold text-center mb-10">&lt;총무부&gt;</h2>
-            <div className="space-y-6">
-              {generalAffairs.map((member) => (
-                <MemberCard key={member.id} member={member} />
-              ))}
-            </div>
+            {secondarySections.length ? (
+              <section className="grid grid-cols-1 gap-10 md:grid-cols-2 xl:grid-cols-3 xl:gap-8">
+                {secondarySections.map((section) => (
+                  <div key={section.department}>
+                    <h2 className="mb-8 text-center text-[2rem] font-black tracking-[-0.03em] text-black">
+                      &lt;{section.department}&gt;
+                    </h2>
+                    {section.members.length ? (
+                      <div className="space-y-6">
+                        {section.members.map((member) => (
+                          <MemberCard
+                            key={member.staffId}
+                            member={member}
+                            isAdmin={isAdmin}
+                            onEdit={() => setEditorState({ mode: "edit", staff: member })}
+                            onDelete={() => handleStaffDelete(member)}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-[24px] border border-black/15 bg-white/55 px-5 py-8 text-center text-sm text-[#6f6f6f]">
+                        등록된 운영진이 없습니다.
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </section>
+            ) : null}
           </div>
-
-          {/* 기획부 */}
-          <div>
-            <h2 className="text-3xl font-bold text-center mb-10">&lt;기획부&gt;</h2>
-            <div className="space-y-6">
-              {planning.map((member) => (
-                <MemberCard key={member.id} member={member} />
-              ))}
-            </div>
-          </div>
-
-          {/* 홍보부 */}
-          <div>
-            <h2 className="text-3xl font-bold text-center mb-10">&lt;홍보부&gt;</h2>
-            <div className="space-y-6">
-              {publicity.map((member) => (
-                <MemberCard key={member.id} member={member} />
-              ))}
-            </div>
-          </div>
-        </section>
+        )}
       </main>
 
-      {/* 푸터 */}
-      <footer className="border-t border-gray-300 bg-transparent py-10">
-        <div className="mx-auto max-w-4xl px-4 text-center">
-          <p className="mb-2 text-base font-bold text-gray-900">DO,UM</p>
-          <p className="mb-1 text-xs text-gray-600">소프트웨어융합대학 코딩봉사 동아리</p>
-          <p className="mb-4 text-xs text-gray-600">Contact: doum@kookmin.ac.kr</p>
-          <p className="text-xs text-gray-500">© DO,UM</p>
-        </div>
-      </footer>
+      <SiteFooter />
+
+      <StaffEditorDialog
+        open={Boolean(editorState)}
+        mode={editorState?.mode ?? "create"}
+        staff={editorState?.staff}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditorState(null)
+          }
+        }}
+        onSaved={handleStaffSaved}
+      />
     </div>
   )
 }
 
-// ========== 팀원 카드 컴포넌트 ==========
-function MemberCard({ member }: { member: TeamMember }) {
+function MemberCard({
+  member,
+  isAdmin,
+  onEdit,
+  onDelete,
+}: {
+  member: StaffItem
+  isAdmin: boolean
+  onEdit: () => void
+  onDelete: () => void
+}) {
+  const githubUrl = normalizeExternalUrl(member.githubUrl)
+  const instagramUrl = normalizeExternalUrl(member.instagramUrl)
+
   return (
-    <div className="border rounded-2xl p-6 bg-card hover:shadow-lg transition-shadow">
-      {/* 프로필 사진과 이름 - 관리자가 수정 가능 */}
-      <div className="flex items-center gap-4 mb-6">
-        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center overflow-hidden">
-          {member.photo ? (
-            <Image
-              src={member.photo || "/placeholder.svg"}
-              alt={member.name}
-              width={64}
-              height={64}
-              className="rounded-full object-cover"
-            />
-          ) : (
-            <span className="text-2xl text-muted-foreground">👤</span>
-          )}
+    <div className="overflow-hidden rounded-[28px] border border-black/45 bg-[#f7f5ef]/90 shadow-[0_16px_36px_rgba(18,30,44,0.08)] backdrop-blur-sm">
+      <div className="flex min-h-[128px] items-start justify-between gap-4 px-5 py-5 sm:px-6">
+        <div className="flex min-w-0 items-center gap-4">
+          <div className="relative h-[58px] w-[58px] shrink-0 overflow-hidden rounded-full border border-black/45 bg-[#d9d9d9]">
+            {member.profileImage ? (
+              <Image
+                src={member.profileImage}
+                alt={member.name}
+                fill
+                className="object-cover"
+              />
+            ) : null}
+          </div>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <p className="truncate text-[1.8rem] font-black tracking-[-0.04em] text-black">{member.name}</p>
+              <span className="text-sm font-semibold tracking-[0.04em] text-[#6f6f6f]">
+                &lt;{member.role}&gt;
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-[#707070]">{member.description}</p>
+          </div>
         </div>
-        <p className="text-xl font-bold">{member.name}</p>
+        {isAdmin ? (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={onEdit}
+              className="rounded-full text-[#355264] hover:bg-white"
+            >
+              <PencilLine className="size-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={onDelete}
+              className="rounded-full text-[#a44a4a] hover:bg-white"
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          </div>
+        ) : null}
       </div>
 
-      {/* SNS 링크 - 관리자가 입력 가능 */}
-      <div className="flex gap-8 pt-4 border-t">
-        {member.github && (
-          <Link
-            href={member.github}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-base font-semibold hover:text-primary transition-colors"
-          >
-            Github
-          </Link>
-        )}
-        {member.instagram && (
-          <Link
-            href={member.instagram}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-base font-semibold hover:text-primary transition-colors"
-          >
-            Instagram
-          </Link>
-        )}
-        {!member.github && !member.instagram && (
-          <>
-            <span className="text-base font-semibold text-muted-foreground">Github</span>
-            <span className="text-base font-semibold text-muted-foreground">Instagram</span>
-          </>
-        )}
+      <div className="grid grid-cols-2 border-t border-black/25">
+        <SocialLink
+          href={githubUrl}
+          label="Github"
+          icon={<Github className="size-4" />}
+          className="border-r border-black/20"
+        />
+        <SocialLink
+          href={instagramUrl}
+          label="Instagram"
+          icon={<Instagram className="size-4" />}
+        />
       </div>
     </div>
+  )
+}
+
+function SocialLink({
+  href,
+  label,
+  icon,
+  className = "",
+}: {
+  href: string
+  label: string
+  icon: ReactNode
+  className?: string
+}) {
+  const baseClassName =
+    `flex items-center justify-center gap-2 px-4 py-3 text-[1rem] font-bold transition sm:px-6 sm:py-4 ${className}`.trim()
+
+  if (!href) {
+    return <div className={`${baseClassName} text-black/35`}>{icon}{label}</div>
+  }
+
+  return (
+    <Link
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className={`${baseClassName} text-black hover:bg-white/70`}
+    >
+      {icon}
+      {label}
+    </Link>
   )
 }

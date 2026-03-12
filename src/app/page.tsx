@@ -1,9 +1,24 @@
 "use client"
+
 import Image from "next/image"
-import { useEffect } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Button } from "@/components/ui/button"
+import { PencilLine, Plus } from "lucide-react"
+
+import { ClubContentEditorDialog } from "@/components/pages/club-content-editor-dialog"
+import { ClubProgramEditorDialog } from "@/components/pages/club-program-editor-dialog"
 import { HeaderNav } from "@/components/header-nav"
+import { SiteFooter } from "@/components/site-footer"
+import { Button } from "@/components/ui/button"
+import { useAdminSession } from "@/hooks/use-admin-session"
+import {
+  fetchActivities,
+  fetchClubContent,
+  fetchClubPrograms,
+  type ActivityItem,
+  type ClubContent,
+  type ClubProgramItem,
+} from "@/lib/content-api"
 
 function pickToken(params: URLSearchParams) {
   return (
@@ -19,16 +34,47 @@ function pickRefreshToken(params: URLSearchParams) {
   return params.get("refresh_token") || params.get("refreshToken") || ""
 }
 
-interface ActivityHistory {
-  id: number
-  title: string
-  description: string
-  imageUrl: string
+const defaultClubContent: ClubContent = {
+  introTitle: "Do,um?",
+  introLead: "'um' 하고 망설이기 전에, 'do' 무엇이든 해보자",
+  introDescription:
+    "Do,um은 국민대학교 소프트웨어융합대학 학생들이 함께 배우고 나누기 위해 만든 교육 봉사 동아리입니다. 교내외 코딩 교육과 친목 활동, 스터디를 꾸준히 이어가고 있습니다.",
+  heroBannerImageUrl: "/hero-banner.png",
+  activitySectionTitle: "정규 활동",
+  historySectionTitle: "우리는 어떤 길을 걸어왔을까요?",
+  studyCaption: "자기개발을 위한",
+  studyTitle: "다양한 스터디와 친목활동 진행",
+  learnTitle: "Learn",
+  learnDescription: "기초부터 차근차근, 함께 배우는 스터디",
+  growTitle: "Grow",
+  growDescription: "알고리즘과 프로젝트로 쌓는 실전 역량",
+  shareTitle: "Share",
+  shareDescription: "배운 기술로 실천하는 SW 교육 봉사",
+  studyImageUrl: "/skill.png",
+  createdAt: null,
+  updatedAt: null,
+}
+
+function compareActivities(left: ActivityItem, right: ActivityItem) {
+  const leftKey = left.activityDate || left.createdAt
+  const rightKey = right.activityDate || right.createdAt
+  return rightKey.localeCompare(leftKey)
 }
 
 export default function Home() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { isAdmin } = useAdminSession()
+  const [clubContent, setClubContent] = useState<ClubContent>(defaultClubContent)
+  const [programs, setPrograms] = useState<ClubProgramItem[]>([])
+  const [activities, setActivities] = useState<ActivityItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+  const [contentEditorOpen, setContentEditorOpen] = useState(false)
+  const [programEditorState, setProgramEditorState] = useState<{
+    mode: "create" | "edit"
+    program: ClubProgramItem | null
+  } | null>(null)
 
   useEffect(() => {
     if (!searchParams) {
@@ -37,14 +83,20 @@ export default function Home() {
 
     const token = pickToken(searchParams)
     const refreshToken = pickRefreshToken(searchParams)
-    const error = searchParams.get("error") || searchParams.get("error_description")
+    const errorCode = searchParams.get("error") || searchParams.get("error_description")
+    const allowedDomain = searchParams.get("allowedDomain")
 
-    if (!token && !error) {
+    if (!token && !errorCode) {
       return
     }
 
-    if (error) {
-      router.replace("/")
+    if (errorCode) {
+      const target = new URL("/login", window.location.origin)
+      target.searchParams.set("error", errorCode)
+      if (allowedDomain) {
+        target.searchParams.set("allowedDomain", allowedDomain)
+      }
+      router.replace(`${target.pathname}${target.search}`)
       return
     }
 
@@ -60,43 +112,77 @@ export default function Home() {
     }
   }, [router, searchParams])
 
-  // TODO: 백엔드 API 연동 시 fetch 또는 SWR로 교체
-  const activityHistories: ActivityHistory[] = [
-    { id: 1, title: "", description: "", imageUrl: "" },
-    { id: 2, title: "", description: "", imageUrl: "" },
-    { id: 3, title: "", description: "", imageUrl: "" },
-    { id: 4, title: "", description: "", imageUrl: "" },
-  ]
-  const displayedActivities = activityHistories.slice(0, 4)
+  useEffect(() => {
+    let cancelled = false
 
-  // 활동 히스토리 이미지 색상 (디자인에 맞춤)
-  const historyColors = ["#F5EBE0", "#E8D5D5", "#F5EBE0"]
+    async function loadHome() {
+      setLoading(true)
+      setError("")
+
+      try {
+        const [nextContent, nextPrograms, nextActivities] = await Promise.all([
+          fetchClubContent(),
+          fetchClubPrograms(),
+          fetchActivities(),
+        ])
+
+        if (cancelled) {
+          return
+        }
+
+        setClubContent(nextContent)
+        setPrograms(nextPrograms)
+        setActivities(nextActivities)
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "동아리 페이지 정보를 불러오지 못했습니다.")
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false)
+        }
+      }
+    }
+
+    void loadHome()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const displayedActivities = useMemo(() => {
+    return [...activities].sort(compareActivities).slice(0, 3)
+  }, [activities])
+
+  function handleProgramSaved(savedProgram: ClubProgramItem) {
+    setPrograms((current) =>
+      [...current.filter((item) => item.id !== savedProgram.id), savedProgram].sort(
+        (left, right) => left.sortOrder - right.sortOrder || left.id - right.id,
+      ),
+    )
+  }
 
   return (
     <div
       className="min-h-screen bg-cover bg-center bg-no-repeat bg-fixed"
       style={{ backgroundImage: "url('/home-bg.png')" }}
     >
-      {/* ========== 첫 화면 ========== */}
       <section className="min-h-screen">
-        {/* ========== 헤더 영역 ========== */}
         <HeaderNav />
 
-        {/* ========== 히어로 섹션 ========== */}
         <div className="relative flex min-h-[calc(100vh-80px)] flex-col items-center justify-center px-8 pb-10 pt-6">
-          {/* 배너 이미지 - 위아래로 부드럽게 움직이는 애니메이션 */}
           <div className="flex w-full justify-center">
             <Image
-              src="/hero-banner.png"
+              src={clubContent.heroBannerImageUrl || "/hero-banner.png"}
               alt="DO,UM 배너"
               width={1200}
               height={200}
-              className="w-full max-w-6xl object-contain animate-float"
+              className="animate-float w-full max-w-6xl object-contain"
               priority
             />
           </div>
 
-          {/* 시작하기 버튼 - 주황색 */}
           <div className="mt-6 flex justify-center">
             <Button
               size="lg"
@@ -111,68 +197,104 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ========== 메인 컨텐츠 박스 ========== */}
       <section id="about" className="px-4 py-16 lg:px-8 lg:py-24">
         <div className="mx-auto max-w-6xl">
-          <div className="rounded-xl border border-gray-300 bg-white p-6 lg:p-10">
-            {/* Do,um 소개 */}
-            <div className="mb-10">
-              <h2 className="mb-3 text-2xl font-bold text-gray-900">Do,um?</h2>
-              <p className="mb-1 text-sm text-gray-600">'um' 하고 망설이기 전에, 'do' 무엇이든 해보자</p>
-              <p className="text-sm text-gray-600">
-                Do,um은 국민대학교 소프트웨어학부 교육 봉사 동아리로 매년 교내외로 다양한 봉사활동을 하고 있습니다
-              </p>
-            </div>
-
-            {/* 정규 활동 */}
-            <div id="activities" className="mb-10">
-              <h3 className="mb-6 text-lg font-bold text-gray-900">정규 활동</h3>
-
-              <div className="grid grid-cols-2 gap-4">
-                {[
-                  { title: "타전공", desc: "기후 변화 대응 협력단과 연계하여 타전공생 대상 코딩교육 진행" },
-                  { title: "파이썬 기초교육", desc: "국민대학교 재학생 대상 파이썬 기초교육 진행" },
-                  { title: "글빛 도서관", desc: "성북구 글빛 도서관과 협력하여 sw봉사 진행" },
-                  { title: "강북 엔트리", desc: "우리 동네 키움 센터와 협력하여 엔트리 교육 진행" },
-                  { title: "스터디", desc: "희망하는 스터디 참가/창설하여 개인 역량 강화" },
-                  { title: "모각코", desc: "고려대 인근 카페파인에서 모여서 각자 코딩" },
-                ].map((activity, i) => (
-                  <div
-                    key={i}
-                    className="rounded-lg border border-[#D0E4F5] bg-[#EAF4FB] p-4"
-                  >
-                    <p className="text-sm font-bold text-gray-900">{activity.title}</p>
-                    <p className="mt-1 text-xs text-gray-500">{activity.desc}</p>
-                  </div>
-                ))}
+          <div className="rounded-[28px] border border-gray-300 bg-white/90 p-6 shadow-xl backdrop-blur-sm lg:p-10">
+            <div className="mb-10 flex items-start justify-between gap-4">
+              <div>
+                <h2 className="mb-3 text-2xl font-bold text-gray-900">{clubContent.introTitle}</h2>
+                <p className="mb-1 text-sm text-gray-600">{clubContent.introLead}</p>
+                <p className="max-w-3xl text-sm leading-6 text-gray-600">{clubContent.introDescription}</p>
               </div>
+              {isAdmin ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setContentEditorOpen(true)}
+                  className="rounded-full border-[#d7e5ee] bg-white/80 px-4 text-[#355264] hover:bg-white"
+                >
+                  <PencilLine className="size-4" />
+                  내용/이미지 수정
+                </Button>
+              ) : null}
             </div>
 
-            {/* 활동 히스토리 */}
+            <div id="activities" className="mb-12">
+              <div className="mb-6 flex items-center justify-between gap-4">
+                <h3 className="text-lg font-bold text-gray-900">{clubContent.activitySectionTitle}</h3>
+                {isAdmin ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setProgramEditorState({ mode: "create", program: null })}
+                    className="rounded-full border-[#d7e5ee] bg-white/80 px-4 text-[#355264] hover:bg-white"
+                  >
+                    <Plus className="size-4" />
+                    추가하기
+                  </Button>
+                ) : null}
+              </div>
+
+              {loading ? (
+                <p className="text-sm text-gray-500">동아리 정보를 불러오는 중입니다...</p>
+              ) : error ? (
+                <p className="rounded-2xl border border-[#f1cccc] bg-[#fff6f6] px-4 py-3 text-sm text-[#9a3b3b]">
+                  {error}
+                </p>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {programs.map((program) => (
+                    <div
+                      key={program.id}
+                      className="rounded-2xl border border-[#D0E4F5] bg-[#EAF4FB] p-4 shadow-sm"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-bold text-gray-900">{program.title}</p>
+                          <p className="mt-1 text-xs leading-5 text-gray-600">{program.description}</p>
+                        </div>
+                        {isAdmin ? (
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => setProgramEditorState({ mode: "edit", program })}
+                            className="rounded-full text-[#355264] hover:bg-white/70"
+                          >
+                            <PencilLine className="size-4" />
+                          </Button>
+                        ) : null}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div>
-              <h3 className="mb-8 text-lg font-bold text-gray-900">
-                우리는 어떤 길을<br />걸어왔을까요?
-              </h3>
+              <h3 className="mb-8 text-lg font-bold text-gray-900">{clubContent.historySectionTitle}</h3>
 
               <div className="space-y-10">
-                {displayedActivities.slice(0, 3).map((activity, index) => (
+                {displayedActivities.map((activity, index) => (
                   <div
                     key={activity.id}
                     className={`flex flex-col items-start gap-4 ${
                       index % 2 === 0 ? "lg:flex-row" : "lg:flex-row-reverse"
                     }`}
                   >
-                    {/* 이미지 플레이스홀더 */}
-                    <div 
-                      className="aspect-[4/3] w-full max-w-[200px] rounded-lg"
-                      style={{ backgroundColor: historyColors[index] || "#E8E8E8" }}
-                    />
+                    <div className="relative aspect-[4/3] w-full max-w-[220px] overflow-hidden rounded-[20px] bg-[#dbe6ea]">
+                      {activity.activityImages[0] ? (
+                        <Image
+                          src={activity.activityImages[0]}
+                          alt={activity.activityId}
+                          fill
+                          className="object-cover"
+                        />
+                      ) : null}
+                    </div>
 
-                    {/* 설명 텍스트 */}
-                    <div className="flex items-center">
-                      <p className="text-sm text-gray-600">
-                        {activity.description || "간단한 활동 설명"}
-                      </p>
+                    <div className="flex min-h-[160px] flex-col justify-center">
+                      <p className="text-sm font-semibold text-gray-900">{activity.activityId}</p>
+                      <p className="mt-2 max-w-xl text-sm leading-6 text-gray-600">{activity.description}</p>
                     </div>
                   </div>
                 ))}
@@ -182,36 +304,32 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ========== 스터디 섹션 ========== */}
       <section className="px-4 py-12 lg:px-8">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-4 ml-6">
-            <p className="text-sm text-gray-600">자기개발을 위한</p>
-            <p className="text-lg font-bold text-gray-900">다양한 스터디와 친목활동 진행</p>
+        <div className="mx-auto max-w-6xl rounded-[28px] bg-white/80 px-6 py-10 shadow-xl backdrop-blur-sm">
+          <div className="mb-4 ml-2">
+            <p className="text-sm text-gray-600">{clubContent.studyCaption}</p>
+            <p className="text-lg font-bold text-gray-900">{clubContent.studyTitle}</p>
           </div>
 
-          {/* Learn, Grow, Share + 이미지 영역 */}
-          <div className="flex items-start justify-between">
-            {/* 왼쪽: Learn, Grow, Share 텍스트 */}
-            <div className="ml-6 space-y-5">
+          <div className="flex flex-col items-start justify-between gap-10 lg:flex-row">
+            <div className="ml-2 space-y-5">
               <div>
-                <p className="text-lg font-bold text-gray-900">Learn</p>
-                <p className="text-base text-gray-600">기초부터 차근차근, 함께 배우는 스터디</p>
+                <p className="text-lg font-bold text-gray-900">{clubContent.learnTitle}</p>
+                <p className="text-base text-gray-600">{clubContent.learnDescription}</p>
               </div>
               <div>
-                <p className="text-lg font-bold text-gray-900">Grow</p>
-                <p className="text-base text-gray-600">알고리즘·프로젝트로 쌓는 실력</p>
+                <p className="text-lg font-bold text-gray-900">{clubContent.growTitle}</p>
+                <p className="text-base text-gray-600">{clubContent.growDescription}</p>
               </div>
               <div>
-                <p className="text-lg font-bold text-gray-900">Share</p>
-                <p className="text-base text-gray-600">배운 기술로 실천하는 SW 봉사</p>
+                <p className="text-lg font-bold text-gray-900">{clubContent.shareTitle}</p>
+                <p className="text-base text-gray-600">{clubContent.shareDescription}</p>
               </div>
             </div>
 
-            {/* 오른쪽: 기술 스택 이미지 */}
-            <div className="mr-6 -mt-10 h-100 w-132 lg:h-72 lg:w-[28rem]">
+            <div className="h-[18rem] w-full max-w-[28rem] lg:-mt-10">
               <Image
-                src="/skill.png"
+                src={clubContent.studyImageUrl || "/skill.png"}
                 alt="기술 스택 아이콘"
                 width={600}
                 height={472}
@@ -223,15 +341,26 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ========== 푸터 ========== */}
-      <footer className="mt-8 border-t border-gray-300 bg-transparent py-10">
-        <div className="mx-auto max-w-6xl px-4 text-center">
-          <p className="mb-2 text-base font-bold text-gray-900">DO,UM</p>
-          <p className="mb-1 text-xs text-gray-600">소프트웨어융합대학 코딩봉사 동아리</p>
-          <p className="mb-4 text-xs text-gray-600">Contact: doum@kookmin.ac.kr</p>
-          <p className="text-xs text-gray-500">© DO,UM</p>
-        </div>
-      </footer>
+      <SiteFooter />
+
+      <ClubContentEditorDialog
+        open={contentEditorOpen}
+        content={clubContent}
+        onOpenChange={setContentEditorOpen}
+        onSaved={setClubContent}
+      />
+
+      <ClubProgramEditorDialog
+        open={Boolean(programEditorState)}
+        mode={programEditorState?.mode ?? "create"}
+        program={programEditorState?.program}
+        onOpenChange={(open) => {
+          if (!open) {
+            setProgramEditorState(null)
+          }
+        }}
+        onSaved={handleProgramSaved}
+      />
     </div>
   )
 }

@@ -1,0 +1,19 @@
+app/rental/page.tsx(307,23): error TS2322: Type '{ from?: Date | undefined; to?: Date | undefined; }' is not assignable to type 'DateRange'.
+  Property 'from' is optional in type '{ from?: Date | undefined; to?: Date | undefined; }' but required in type 'DateRange'.
+components/ui/button-group.tsx(5,27): error TS2307: Cannot find module '@/components/ui/separator' or its corresponding type declarations.
+components/ui/field.tsx(7,23): error TS2307: Cannot find module '@/components/ui/label' or its corresponding type declarations.
+components/ui/field.tsx(8,27): error TS2307: Cannot find module '@/components/ui/separator' or its corresponding type declarations.
+components/ui/form.tsx(17,23): error TS2307: Cannot find module '@/components/ui/label' or its corresponding type declarations.
+components/ui/item.tsx(6,27): error TS2307: Cannot find module '@/components/ui/separator' or its corresponding type declarations.
+components/ui/sidebar.tsx(12,27): error TS2307: Cannot find module '@/components/ui/separator' or its corresponding type declarations.
+components/ui/sidebar.tsx(19,8): error TS2307: Cannot find module '@/components/ui/sheet' or its corresponding type declarations.
+components/ui/sidebar.tsx(20,26): error TS2307: Cannot find module '@/components/ui/skeleton' or its corresponding type declarations.
+components/ui/sidebar.tsx(26,8): error TS2307: Cannot find module '@/components/ui/tooltip' or its corresponding type declarations.
+components/ui/toaster.tsx(11,8): error TS2307: Cannot find module '@/components/ui/toast' or its corresponding type declarations.
+components/ui/toggle-group.tsx(8,32): error TS2307: Cannot find module '@/components/ui/toggle' or its corresponding type declarations.
+components/ui/use-toast.ts(6,53): error TS2307: Cannot find module '@/components/ui/toast' or its corresponding type declarations.
+components/ui/use-toast.ts(158,22): error TS7006: Parameter 'open' implicitly has an 'any' type.
+hooks/use-toast.ts(6,53): error TS2307: Cannot find module '@/components/ui/toast' or its corresponding type declarations.
+hooks/use-toast.ts(158,22): error TS7006: Parameter 'open' implicitly has an 'any' type.
+src/hooks/use-toast.ts(5,53): error TS2307: Cannot find module '@/components/ui/toast' or its corresponding type declarations.
+src/hooks/use-toast.ts(153,22): error TS7006: Parameter 'open' implicitly has an 'any' type.
