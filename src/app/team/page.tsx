@@ -155,20 +155,6 @@ export default function TeamPage() {
     }))
   const extraSections = groupedStaff.filter((section) => !departmentOrder.includes(section.department))
   const secondarySections = [...fixedSecondarySections, ...extraSections]
-  const leadSectionGridClass = useMemo(() => {
-    const leadCount = leadSection?.members.length ?? 0
-
-    if (leadCount <= 1) {
-      return "max-w-[420px] grid-cols-1"
-    }
-
-    if (leadCount === 2) {
-      return "max-w-[860px] grid-cols-1 md:grid-cols-2"
-    }
-
-    return "max-w-[1280px] grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
-  }, [leadSection])
-
   function handleStaffSaved(savedStaff: StaffItem) {
     setStaff((current) => {
       const next = [...current.filter((item) => item.staffId !== savedStaff.staffId), savedStaff]
@@ -241,20 +227,50 @@ export default function TeamPage() {
           <div className="space-y-[88px]">
             {leadSection ? (
               <section>
-                <h2 className="mb-8 text-center text-[2rem] font-black tracking-[-0.03em] text-black sm:text-[2.35rem]">
-                  &lt;회장단&gt;
-                </h2>
-                <div className={`mx-auto grid gap-7 ${leadSectionGridClass}`}>
-                  {leadSection.members.map((member) => (
-                    <MemberCard
-                      key={member.staffId}
-                      member={member}
-                      isAdmin={isAdmin}
-                      onEdit={() => setEditorState({ mode: "edit", staff: member })}
-                      onDelete={() => handleStaffDelete(member)}
-                    />
-                  ))}
-                </div>
+                <SectionHeading title="회장단" subtitle="Leadership" />
+                {leadSection.members.length === 3 ? (
+                  <div className="space-y-7">
+                    <div className="mx-auto max-w-[420px]">
+                      <MemberCard
+                        member={leadSection.members[0]}
+                        isAdmin={isAdmin}
+                        onEdit={() => setEditorState({ mode: "edit", staff: leadSection.members[0] })}
+                        onDelete={() => handleStaffDelete(leadSection.members[0])}
+                      />
+                    </div>
+                    <div className="mx-auto grid max-w-[860px] gap-7 grid-cols-1 md:grid-cols-2">
+                      {leadSection.members.slice(1).map((member) => (
+                        <MemberCard
+                          key={member.staffId}
+                          member={member}
+                          isAdmin={isAdmin}
+                          onEdit={() => setEditorState({ mode: "edit", staff: member })}
+                          onDelete={() => handleStaffDelete(member)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    className={`mx-auto grid gap-7 ${
+                      leadSection.members.length <= 1
+                        ? "max-w-[420px] grid-cols-1"
+                        : leadSection.members.length === 2
+                          ? "max-w-[860px] grid-cols-1 md:grid-cols-2"
+                          : "max-w-[1280px] grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
+                    }`}
+                  >
+                    {leadSection.members.map((member) => (
+                      <MemberCard
+                        key={member.staffId}
+                        member={member}
+                        isAdmin={isAdmin}
+                        onEdit={() => setEditorState({ mode: "edit", staff: member })}
+                        onDelete={() => handleStaffDelete(member)}
+                      />
+                    ))}
+                  </div>
+                )}
               </section>
             ) : null}
 
@@ -262,9 +278,7 @@ export default function TeamPage() {
               <section className="grid grid-cols-1 gap-10 md:grid-cols-2 xl:grid-cols-3 xl:gap-8">
                 {secondarySections.map((section) => (
                   <div key={section.department}>
-                    <h2 className="mb-8 text-center text-[2rem] font-black tracking-[-0.03em] text-black">
-                      &lt;{section.department}&gt;
-                    </h2>
+                    <SectionHeading title={section.department} compact />
                     {section.members.length ? (
                       <div className="space-y-6">
                         {section.members.map((member) => (
@@ -338,8 +352,9 @@ function MemberCard({
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
               <p className="truncate text-[1.8rem] font-black tracking-[-0.04em] text-black">{member.name}</p>
-              <span className="text-sm font-semibold tracking-[0.04em] text-[#6f6f6f]">
-                &lt;{member.role}&gt;
+              <span className="inline-flex items-center gap-2 text-sm font-semibold tracking-[0.08em] text-[#6f8590]">
+                <span className="h-px w-4 bg-[#b8c9d3]" />
+                {member.role}
               </span>
             </div>
             <p className="mt-1 text-sm text-[#707070]">{member.description}</p>
@@ -379,6 +394,39 @@ function MemberCard({
           label="Instagram"
           icon={<Instagram className="size-4" />}
         />
+      </div>
+    </div>
+  )
+}
+
+function SectionHeading({
+  title,
+  subtitle,
+  compact = false,
+}: {
+  title: string
+  subtitle?: string
+  compact?: boolean
+}) {
+  return (
+    <div className={compact ? "mb-8 text-center" : "mb-8 text-center sm:mb-10"}>
+      {subtitle ? (
+        <p className="mb-3 text-[0.72rem] font-semibold uppercase tracking-[0.36em] text-[#6f8590]">
+          {subtitle}
+        </p>
+      ) : null}
+      <div className="flex items-center justify-center gap-3">
+        <span className="h-px w-8 bg-gradient-to-r from-transparent to-[#9fbfd4]" />
+        <h2
+          className={
+            compact
+              ? "text-[1.9rem] font-black tracking-[-0.03em] text-black"
+              : "text-[2rem] font-black tracking-[-0.03em] text-black sm:text-[2.35rem]"
+          }
+        >
+          {title}
+        </h2>
+        <span className="h-px w-8 bg-gradient-to-l from-transparent to-[#9fbfd4]" />
       </div>
     </div>
   )

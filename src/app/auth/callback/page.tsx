@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { storeTokens } from "@/lib/auth"
 
 function pickToken(params: URLSearchParams) {
   return (
@@ -46,10 +47,7 @@ export default function OAuthCallbackPage() {
     }
 
     try {
-      localStorage.setItem("access_token", token)
-      if (refreshToken) {
-        localStorage.setItem("refresh_token", refreshToken)
-      }
+      storeTokens(token, refreshToken)
       setStatus("success")
       router.replace(nextPath)
     } catch (err) {

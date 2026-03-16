@@ -4,7 +4,6 @@ import Image from "next/image"
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import {
-  ArrowRight,
   ArrowUpRight,
   CalendarDays,
   Clock3,
@@ -28,6 +27,18 @@ import { fetchActivities, type ActivityItem } from "@/lib/content-api"
 import { hasApiBaseUrl } from "@/lib/api"
 
 const PAGE_SIZE = 6
+type ActivityArchiveMode = "all" | "study"
+
+type ActivitiesLandingPageProps = {
+  mode?: ActivityArchiveMode
+  archiveLabel?: string
+  heroTitle?: string
+  heroDescription?: string
+  sectionEyebrow?: string
+  sectionTitle?: string
+  emptyTitle?: string
+  emptyDescription?: string
+}
 
 function formatDate(value?: string | null) {
   if (!value) {
@@ -86,6 +97,24 @@ function inferActivityLink(activityId: string) {
   }
 
   return { href: "/activities", label: "주요활동" }
+}
+
+function matchesArchiveMode(activity: ActivityItem, mode: ActivityArchiveMode) {
+  if (mode === "all") {
+    return true
+  }
+
+  const searchableText = [
+    activity.activityId,
+    activity.description,
+    activity.location,
+    ...activity.participantNames,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase()
+
+  return searchableText.includes("스터디") || searchableText.includes("study")
 }
 
 function ActivityMetaItem({
@@ -199,7 +228,16 @@ function ActivityCardSkeleton() {
   )
 }
 
-export function ActivitiesLandingPage() {
+export function ActivitiesLandingPage({
+  mode = "all",
+  archiveLabel = "Activity Archive",
+  heroTitle = "Our Activity",
+  heroDescription = "우리가 해온 길, 우리가 가는 길",
+  sectionEyebrow = "DO,UM STORYBOARD",
+  sectionTitle = "활동 기록",
+  emptyTitle = "등록된 활동이 없습니다.",
+  emptyDescription = "`/api/introduce`에 데이터가 들어오면 이 영역이 바로 카드형 기록 보드로 채워집니다.",
+}: ActivitiesLandingPageProps = {}) {
   const [activities, setActivities] = useState<ActivityItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
@@ -246,7 +284,9 @@ export function ActivitiesLandingPage() {
     }
   }, [])
 
-  const sortedActivities = [...activities].sort((left, right) => {
+  const filteredActivities = activities.filter((activity) => matchesArchiveMode(activity, mode))
+
+  const sortedActivities = [...filteredActivities].sort((left, right) => {
     const leftTime = getActivityTimeValue(left)
     const rightTime = getActivityTimeValue(right)
     return sortOrder === "latest" ? rightTime - leftTime : leftTime - rightTime
@@ -304,45 +344,37 @@ export function ActivitiesLandingPage() {
               </div>
               <p className="mt-8 inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/80 px-4 py-2 text-xs font-semibold tracking-[0.22em] text-[#6a7d88] uppercase">
                 <Sparkles className="size-3.5" />
-                Activity Archive
+                {archiveLabel}
               </p>
-              <h1 className="mt-6 text-4xl font-black tracking-tight text-black sm:text-5xl">Our Activity</h1>
-              <p className="mt-4 text-base text-[#677680] sm:text-lg">우리가 해온 길, 우리가 가는 길</p>
-
-              <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-                <Button
-                  onClick={() => {
-                    setSortOrder((current) => (current === "latest" ? "oldest" : "latest"))
-                    setPage(1)
-                  }}
-                  className="rounded-full bg-[#7cb8e8] px-5 text-white shadow-sm hover:bg-[#65a6d8]"
-                >
-                  {sortOrder === "latest" ? "최신순" : "오래된순"}
-                </Button>
-
-                <Button
-                  asChild
-                  variant="outline"
-                  className="rounded-full border-white/70 bg-white/75 px-5 text-[#355264] shadow-sm hover:bg-white"
-                >
-                  <Link href="/activities/projects">
-                    프로젝트 보기
-                    <ArrowRight className="size-4" />
-                  </Link>
-                </Button>
-              </div>
+              <h1 className="mt-6 text-4xl font-black tracking-tight text-black sm:text-5xl">{heroTitle}</h1>
+              <p className="mt-4 text-base text-[#677680] sm:text-lg">{heroDescription}</p>
             </section>
 
             <section className="mt-14 rounded-[36px] border border-white/70 bg-white/68 p-5 shadow-[0_24px_60px_rgba(48,72,88,0.08)] backdrop-blur-md sm:p-8">
               <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-[#6f8590]">DO,UM STORYBOARD</p>
-                  <h2 className="mt-2 text-2xl font-bold text-[#1d2a34]">활동 기록</h2>
+                  <p className="text-sm font-semibold text-[#6f8590]">{sectionEyebrow}</p>
+                  <h2 className="mt-2 text-2xl font-bold text-[#1d2a34]">{sectionTitle}</h2>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
                   <p className="text-sm text-[#72828c]">
-                    총 <span className="font-semibold text-[#294255]">{activities.length}</span>개의 활동
+                    총 <span className="font-semibold text-[#294255]">{filteredActivities.length}</span>개의 활동
                   </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setSortOrder((current) => (current === "latest" ? "oldest" : "latest"))
+                      setPage(1)
+                    }}
+                    className={`rounded-full px-4 shadow-sm ${
+                      sortOrder === "latest"
+                        ? "border-[#85b7e7] bg-[#7cb8e8] text-white hover:bg-[#65a6d8] hover:text-white"
+                        : "border-[#d7e5ee] bg-white/80 text-[#355264] hover:bg-white"
+                    }`}
+                  >
+                    {sortOrder === "latest" ? "최신순" : "오래된순"}
+                  </Button>
                   {isAdmin ? (
                     <Button
                       size="sm"
@@ -375,12 +407,10 @@ export function ActivitiesLandingPage() {
                 </Card>
               ) : null}
 
-              {!loading && !error && !activities.length ? (
+              {!loading && !error && !filteredActivities.length ? (
                 <Card className="rounded-[28px] border border-[#dbe6eb] bg-white/85 p-8 text-center shadow-none">
-                  <h3 className="text-xl font-bold text-[#213542]">등록된 활동이 없습니다.</h3>
-                  <p className="mt-3 text-sm leading-6 text-[#677983]">
-                    `/api/introduce`에 데이터가 들어오면 이 영역이 바로 카드형 기록 보드로 채워집니다.
-                  </p>
+                  <h3 className="text-xl font-bold text-[#213542]">{emptyTitle}</h3>
+                  <p className="mt-3 text-sm leading-6 text-[#677983]">{emptyDescription}</p>
                 </Card>
               ) : null}
 
@@ -555,11 +585,6 @@ export function ActivitiesLandingPage() {
                         icon={MapPin}
                         label="Location"
                         value={selectedActivity.location ?? "활동 장소 정보 없음"}
-                      />
-                      <ActivityMetaItem
-                        icon={Images}
-                        label="Gallery"
-                        value={`${selectedImages.length}장의 활동 사진`}
                       />
                     </div>
 

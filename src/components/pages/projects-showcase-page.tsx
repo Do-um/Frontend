@@ -73,12 +73,14 @@ function ProjectMetaItem({
 }) {
   return (
     <div className="rounded-2xl border border-[#d7e5ea] bg-white/82 p-4 shadow-[0_10px_30px_rgba(47,74,91,0.06)]">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#7b8f99]">
           <Icon className="mt-0.5 size-3.5 shrink-0" />
           <span>{label}</span>
         </div>
-        <p className="max-w-[14rem] text-right text-base font-semibold leading-6 text-[#223541]">{value}</p>
+        <p className="shrink-0 whitespace-nowrap text-right text-[clamp(1rem,2vw,1.25rem)] font-semibold leading-none text-[#223541]">
+          {value}
+        </p>
       </div>
     </div>
   )
@@ -246,7 +248,6 @@ export function ProjectsShowcasePage() {
     return getProjectTimeValue(right) - getProjectTimeValue(left)
   })
 
-  const pinnedCount = orderedProjects.filter((project) => project.pinned).length
   const selectedImages = selectedProject ? getProjectImages(selectedProject) : []
   const activeImage = selectedImages[activeImageIndex] ?? selectedImages[0]
   const linkEntries = selectedProject
@@ -305,16 +306,8 @@ export function ProjectsShowcasePage() {
                   <p className="text-sm font-semibold text-[#6f8590]">PROJECT ARCHIVE</p>
                   <h2 className="mt-2 text-2xl font-bold text-[#1d2a34]">프로젝트 기록</h2>
                 </div>
-                <div className="flex flex-wrap gap-3">
-                  <div className="rounded-2xl bg-[#ebf6fc] px-4 py-3 text-left">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#698192]">Projects</p>
-                    <p className="mt-2 text-2xl font-bold text-[#223542]">{projects.length}</p>
-                  </div>
-                  <div className="rounded-2xl bg-[#f3f6eb] px-4 py-3 text-left">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#73805c]">Pinned</p>
-                    <p className="mt-2 text-2xl font-bold text-[#374722]">{pinnedCount}</p>
-                  </div>
-                  {isAdmin ? (
+                {isAdmin ? (
+                  <div className="flex flex-wrap gap-3">
                     <Button
                       size="sm"
                       variant="outline"
@@ -324,8 +317,8 @@ export function ProjectsShowcasePage() {
                       <Plus className="size-4" />
                       추가하기
                     </Button>
-                  ) : null}
-                </div>
+                  </div>
+                ) : null}
               </div>
 
               {loading ? (
@@ -399,9 +392,6 @@ export function ProjectsShowcasePage() {
                             <FolderOpen className="size-14 text-[#6f8590]" />
                           </div>
                         )}
-                        <div className="absolute left-4 top-4 rounded-full bg-[#1f2730]/75 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm">
-                          총 {selectedImages.length}장
-                        </div>
                       </div>
 
                       {selectedImages.length > 1 ? (
@@ -499,11 +489,6 @@ export function ProjectsShowcasePage() {
                         label="Team"
                         value={selectedProject.teamName || "DO,UM"}
                       />
-                      <ProjectMetaItem
-                        icon={Images}
-                        label="Gallery"
-                        value={`${selectedImages.length}장의 프로젝트 이미지`}
-                      />
                     </div>
 
                     {selectedProject.members.length ? (
@@ -549,10 +534,6 @@ export function ProjectsShowcasePage() {
                         기록 메타데이터
                       </p>
                       <div className="mt-4 space-y-3 text-sm text-[#4f6470]">
-                        <div className="flex items-center justify-between gap-3 border-b border-[#edf1f3] pb-3">
-                          <span>프로젝트 ID</span>
-                          <span className="font-medium text-[#223541]">{selectedProject.projectId}</span>
-                        </div>
                         <div className="flex items-center justify-between gap-3 border-b border-[#edf1f3] pb-3">
                           <span>등록일</span>
                           <span className="font-medium text-[#223541]">{formatDate(selectedProject.createdAt)}</span>

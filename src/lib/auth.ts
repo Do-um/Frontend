@@ -2,6 +2,9 @@ import { apiFetchData } from "@/lib/api"
 
 const ACCESS_TOKEN_KEY = "access_token"
 const REFRESH_TOKEN_KEY = "refresh_token"
+export const AUTH_STATE_CHANGED_EVENT = "doum-auth-state-changed"
+
+export type NormalizedUserRole = "ADMIN" | "DOUM_MEMBER" | "OUTSIDER"
 
 export type AuthenticatedUser = {
   id: number
@@ -11,6 +14,18 @@ export type AuthenticatedUser = {
   role: string
   createdAt: string
   updatedAt: string
+}
+
+export function normalizeUserRole(role: string | null | undefined): NormalizedUserRole {
+  if (role === "ADMIN") {
+    return "ADMIN"
+  }
+
+  if (role === "DOUM_MEMBER" || role === "MEMBER" || role === "STAFF") {
+    return "DOUM_MEMBER"
+  }
+
+  return "OUTSIDER"
 }
 
 export function getStoredAccessToken() {
@@ -38,6 +53,7 @@ export function storeTokens(accessToken: string, refreshToken?: string) {
   if (refreshToken) {
     localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken)
   }
+  window.dispatchEvent(new Event(AUTH_STATE_CHANGED_EVENT))
 }
 
 export function clearStoredTokens() {
@@ -47,6 +63,7 @@ export function clearStoredTokens() {
 
   localStorage.removeItem(ACCESS_TOKEN_KEY)
   localStorage.removeItem(REFRESH_TOKEN_KEY)
+  window.dispatchEvent(new Event(AUTH_STATE_CHANGED_EVENT))
 }
 
 export function getAuthorizationHeaders(token = getStoredAccessToken()): HeadersInit {

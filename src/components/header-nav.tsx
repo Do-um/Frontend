@@ -16,7 +16,7 @@ export function HeaderNav() {
   const router = useRouter()
   const [openMenu, setOpenMenu] = useState<"intro" | "activities" | null>(null)
   const closeTimerRef = useRef<number | null>(null)
-  const { isLoggedIn } = useAdminSession()
+  const { isAdmin, isLoggedIn } = useAdminSession()
 
   const clearCloseTimer = () => {
     if (closeTimerRef.current !== null) {
@@ -133,12 +133,6 @@ export function HeaderNav() {
                 >
                   스터디
                 </Link>
-                <Link
-                  href="/activities/mogakko"
-                  className="block whitespace-nowrap px-3 py-2 text-sm font-medium transition-colors hover:bg-gray-100"
-                >
-                  모각코
-                </Link>
                 </div>
               </div>
             )}
@@ -155,6 +149,14 @@ export function HeaderNav() {
           >
             대여
           </Link>
+          {isAdmin ? (
+            <Link
+              href="/admin/users"
+              className="inline-flex h-11 items-center px-3 text-sm font-semibold leading-none text-[#18232d] transition-colors hover:text-[#47708a]"
+            >
+              권한 관리
+            </Link>
+          ) : null}
           {isLoggedIn ? (
             <button
               type="button"

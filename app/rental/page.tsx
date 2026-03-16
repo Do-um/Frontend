@@ -1,234 +1,565 @@
 "use client"
 
-import { useMemo, useState } from "react"
-import { useEffect } from "react"
 import Image from "next/image"
+import { type ComponentProps, useEffect, useMemo, useRef, useState } from "react"
+import { PencilLine, Plus, Search, Sparkles, Trash2, X } from "lucide-react"
+
 import { HeaderNav } from "@/components/header-nav"
-import { Calendar } from "@/components/ui/calendar"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { RentalItemEditorDialog } from "@/components/pages/rental-item-editor-dialog"
+import { Calendar, CalendarDayButton } from "@/components/ui/calendar"
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { useAdminSession } from "@/hooks/use-admin-session"
+import { hasApiBaseUrl } from "@/lib/api"
+import {
+  createRental,
+  deleteRentalItem,
+  fetchMyRentalHistory,
+  fetchRentalItems,
+  fetchRentalSchedule,
+  returnRental,
+  type RentalItem,
+  type RentalScheduleEntry,
+  type UserRentalHistoryItem,
+} from "@/lib/content-api"
+import { resolveMediaUrl } from "@/lib/media"
+import { cn } from "@/lib/utils"
 
-type RentalItem = {
-  id: string
-  name: string
-  image: string
-  status: "대여중" | "대여가능"
-  totalQuantity: number
+function formatDateTime(value?: string | null) {
+  if (!value) {
+    return "-"
+  }
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return "-"
+  }
+
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date)
 }
 
-type Booking = {
-  id: string
-  borrower: string
-  purpose: string
-  quantity: number
-  from: Date
-  to: Date
+function formatDate(value?: string | null) {
+  if (!value) {
+    return "-"
+  }
+
+  const [year, month, day] = value.split("-").map(Number)
+  if (!year || !month || !day) {
+    return value
+  }
+
+  return `${year}.${String(month).padStart(2, "0")}.${String(day).padStart(2, "0")}`
 }
 
-// 관리자 관리 영역: 최대 9개까지 추가/수정 가능
-// name, image 값을 관리자가 변경해 업데이트합니다.
-const rentalItems: RentalItem[] = [
-  {
-    id: "smart-cute-bot",
-    name: "Smart Cute Bot",
-    image: "/rental-smart-cute-bot.png",
-    status: "대여중",
-    totalQuantity: 10,
-  },
-  {
-    id: "microbit",
-    name: "Microbit",
-    image: "/rental-microbit.png",
-    status: "대여가능",
-    totalQuantity: 10,
-  },
-  {
-    id: "sqld-book",
-    name: "SQLD 책",
-    image: "/rental-sqld.png",
-    status: "대여중",
-    totalQuantity: 1,
-  },
-]
+function formatDateRange(startDate?: string | null, endDate?: string | null) {
+  if (!startDate || !endDate) {
+    return "기간 정보 없음"
+  }
 
-const statusStyles: Record<string, { dot: string; text: string }> = {
-  대여중: { dot: "bg-red-500", text: "text-gray-600" },
-  대여가능: { dot: "bg-green-500", text: "text-gray-600" },
+  return `${formatDate(startDate)} ~ ${formatDate(endDate)}`
 }
 
-const initialBookings: Record<string, Booking[]> = {}
+function parseDateOnly(value: string) {
+  const [year, month, day] = value.split("-").map(Number)
+  return new Date(year, month - 1, day)
+}
+
+function startOfDay(date = new Date()) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+}
+
+function toDateKey(date: Date) {
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  return `${date.getFullYear()}-${month}-${day}`
+}
+
+function toApiDate(date: Date) {
+  return toDateKey(date)
+}
+
+function buildReservationLabel(names: string[]) {
+  if (!names.length) {
+    return null
+  }
+
+  const firstName = names[0].length > 4 ? `${names[0].slice(0, 4)}…` : names[0]
+
+  if (names.length === 1) {
+    return firstName
+  }
+
+  return `${firstName}+${names.length - 1}`
+}
+
+function RentalScheduleDayButton({
+  className,
+  children,
+  label,
+  tooltip,
+  ...props
+}: ComponentProps<typeof CalendarDayButton> & {
+  label?: string | null
+  tooltip?: string | null
+}) {
+  return (
+    <CalendarDayButton
+      {...props}
+      title={tooltip ?? undefined}
+      className={cn(label ? "gap-0.5 pb-1" : "", className)}
+    >
+      <span>{children}</span>
+      {label ? <span className="max-w-full truncate px-1 text-[10px] text-[#4a6a7c]">{label}</span> : null}
+    </CalendarDayButton>
+  )
+}
+
+function getDayCount(from?: Date, to?: Date) {
+  if (!from || !to) {
+    return 0
+  }
+
+  const start = startOfDay(from)
+  const end = startOfDay(to)
+  const diff = end.getTime() - start.getTime()
+  return Math.floor(diff / (1000 * 60 * 60 * 24)) + 1
+}
+
+function getItemStatusMeta(item: RentalItem) {
+  if (item.status === "MAINTENANCE") {
+    return {
+      label: "점검중",
+      dotClassName: "bg-amber-500",
+      textClassName: "text-gray-600",
+      disabled: true,
+    }
+  }
+
+  if (item.status !== "AVAILABLE") {
+    return {
+      label: "대여불가",
+      dotClassName: "bg-gray-400",
+      textClassName: "text-gray-600",
+      disabled: true,
+    }
+  }
+
+  if (item.availableQuantity <= 0) {
+    return {
+      label: "대여중",
+      dotClassName: "bg-red-500",
+      textClassName: "text-gray-600",
+      disabled: true,
+    }
+  }
+
+  return {
+    label: "대여가능",
+    dotClassName: "bg-green-500",
+    textClassName: "text-gray-600",
+    disabled: false,
+  }
+}
 
 export default function RentalPage() {
-  // TODO: 인증 연동 시 관리자 여부를 서버에서 판별해 주세요.
-  const isAdmin = true
-
-  const [selectedItem, setSelectedItem] = useState<RentalItem | null>(null)
-  const [bookings, setBookings] = useState<Record<string, Booking[]>>(initialBookings)
+  const { isAdmin, isLoggedIn, isDoumMember, loading: sessionLoading } = useAdminSession()
+  const [items, setItems] = useState<RentalItem[]>([])
+  const [rentalHistory, setRentalHistory] = useState<UserRentalHistoryItem[]>([])
+  const [scheduleEntries, setScheduleEntries] = useState<RentalScheduleEntry[]>([])
+  const [selectedItemId, setSelectedItemId] = useState<number | null>(null)
   const [range, setRange] = useState<{ from?: Date; to?: Date }>({})
-  const [borrower, setBorrower] = useState("")
-  const [purpose, setPurpose] = useState("")
   const [quantityInput, setQuantityInput] = useState("1")
+  const [purposeInput, setPurposeInput] = useState("")
+  const [searchQuery, setSearchQuery] = useState("")
+  const [loadingItems, setLoadingItems] = useState(true)
+  const [loadingHistory, setLoadingHistory] = useState(false)
+  const [loadingSchedule, setLoadingSchedule] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
+  const [actionError, setActionError] = useState("")
+  const [scheduleError, setScheduleError] = useState("")
+  const [deleteError, setDeleteError] = useState("")
+  const [managingItemId, setManagingItemId] = useState<number | null>(null)
+  const [editorState, setEditorState] = useState<{
+    mode: "create" | "edit"
+    item: RentalItem | null
+  } | null>(null)
+  const detailSectionRef = useRef<HTMLElement | null>(null)
 
-  //기간 지난 대여는 자동으로 반납처리
-  useEffect(() => {
-  const today = new Date()
-  const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate())
-  let changed = false
-  const next = Object.fromEntries(
-    Object.entries(bookings).map(([itemId, list]) => {
-      const filtered = list.filter((booking) => {
-        const end = new Date(booking.to.getFullYear(), booking.to.getMonth(), booking.to.getDate())
-        return end >= todayOnly
-      })
-      if (filtered.length !== list.length) changed = true
-      return [itemId, filtered]
-    }),
+  const selectedItem = useMemo(
+    () => items.find((item) => item.itemId === selectedItemId) ?? null,
+    [items, selectedItemId],
   )
-  if (changed) setBookings(next)
-}, [bookings])
+  const canUseRentalActions = isAdmin || isDoumMember
+  const canManageRentalItems = isAdmin
 
+  const filteredItems = useMemo(() => {
+    const keyword = searchQuery.trim().toLowerCase()
 
-  const selectedBookings = useMemo(() => {
-    if (!selectedItem) return []
-    return bookings[selectedItem.id] ?? []
-  }, [bookings, selectedItem])
+    if (!keyword) {
+      return items
+    }
 
-  const dateKey = (date: Date) => {
-    const month = String(date.getMonth() + 1).padStart(2, "0")
-    const day = String(date.getDate()).padStart(2, "0")
-    return `${date.getFullYear()}-${month}-${day}`
-  }
+    return items.filter((item) => {
+      const itemName = item.name.toLowerCase()
+      const categoryName = item.category.toLowerCase()
+      return itemName.includes(keyword) || categoryName.includes(keyword)
+    })
+  }, [items, searchQuery])
+
+  const activeRentals = useMemo(
+    () => rentalHistory.filter((item) => !item.returned && item.rentalStatus === "RENTED"),
+    [rentalHistory],
+  )
+
+  const selectedItemRentals = useMemo(() => {
+    if (!selectedItem) {
+      return []
+    }
+
+    return activeRentals.filter((item) => item.itemId === selectedItem.itemId)
+  }, [activeRentals, selectedItem])
+
+  const scheduleEntriesByDate = useMemo(() => {
+    const entriesByDate = new Map<string, RentalScheduleEntry[]>()
+
+    scheduleEntries.forEach((entry) => {
+      let cursor = parseDateOnly(entry.startDate)
+      const endDate = parseDateOnly(entry.endDate)
+
+      while (cursor <= endDate) {
+        const key = toDateKey(cursor)
+        const currentEntries = entriesByDate.get(key) ?? []
+        currentEntries.push(entry)
+        entriesByDate.set(key, currentEntries)
+        cursor = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() + 1)
+      }
+    })
+
+    return entriesByDate
+  }, [scheduleEntries])
+
+  const reservationLabelsByDate = useMemo(() => {
+    const labels = new Map<string, string>()
+
+    scheduleEntriesByDate.forEach((entries, key) => {
+      const reservedNames = Array.from(
+        new Set(entries.map((entry) => entry.reservedByName?.trim()).filter(Boolean) as string[]),
+      )
+      const label = buildReservationLabel(reservedNames)
+
+      if (label) {
+        labels.set(key, label)
+      }
+    })
+
+    return labels
+  }, [scheduleEntriesByDate])
+
+  const reservationTooltipsByDate = useMemo(() => {
+    const tooltips = new Map<string, string>()
+
+    scheduleEntriesByDate.forEach((entries, key) => {
+      const reservedNames = Array.from(
+        new Set(entries.map((entry) => entry.reservedByName?.trim()).filter(Boolean) as string[]),
+      )
+
+      if (!reservedNames.length) {
+        return
+      }
+
+      tooltips.set(key, `예약자: ${reservedNames.join(", ")}`)
+    })
+
+    return tooltips
+  }, [scheduleEntriesByDate])
 
   const bookedDateCounts = useMemo(() => {
     const counts = new Map<string, number>()
-    selectedBookings.forEach((booking) => {
-      const cursor = new Date(booking.from)
-      while (cursor <= booking.to) {
-        const key = dateKey(cursor)
-        counts.set(key, (counts.get(key) ?? 0) + booking.quantity)
-        cursor.setDate(cursor.getDate() + 1)
+
+    scheduleEntries.forEach((entry) => {
+      let cursor = parseDateOnly(entry.startDate)
+      const endDate = parseDateOnly(entry.endDate)
+
+      while (cursor <= endDate) {
+        const key = toDateKey(cursor)
+        counts.set(key, (counts.get(key) ?? 0) + entry.quantity)
+        cursor = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() + 1)
       }
     })
-    return counts
-  }, [selectedBookings])
 
-  const bookedDates = useMemo(() => {
-    if (!selectedItem) return []
-    const total = selectedItem.totalQuantity
+    return counts
+  }, [scheduleEntries])
+
+  const fullyBookedDates = useMemo(() => {
+    if (!selectedItem) {
+      return []
+    }
+
     return Array.from(bookedDateCounts.entries())
-      .filter(([, count]) => count >= total)
-      .map(([key]) => {
-        const [year, month, day] = key.split("-").map(Number)
-        return new Date(year, month - 1, day)
-      })
+      .filter(([, quantity]) => quantity >= selectedItem.totalQuantity)
+      .map(([key]) => parseDateOnly(key))
   }, [bookedDateCounts, selectedItem])
 
-  const getAvailableQuantityForRange = (from?: Date, to?: Date) => {
-    if (!selectedItem || !from || !to) return 0
-    const total = selectedItem.totalQuantity
-    let minAvailable = total
-    const cursor = new Date(from)
-    while (cursor <= to) {
-      const key = dateKey(cursor)
-      const bookedCount = bookedDateCounts.get(key) ?? 0
-      minAvailable = Math.min(minAvailable, total - bookedCount)
-      cursor.setDate(cursor.getDate() + 1)
+  const availableQuantityForRange = useMemo(() => {
+    if (!selectedItem || !range.from || !range.to) {
+      return 0
     }
+
+    let minAvailable = selectedItem.totalQuantity
+    let cursor = startOfDay(range.from)
+    const endDate = startOfDay(range.to)
+
+    while (cursor <= endDate) {
+      const key = toDateKey(cursor)
+      const reserved = bookedDateCounts.get(key) ?? 0
+      minAvailable = Math.min(minAvailable, selectedItem.totalQuantity - reserved)
+      cursor = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() + 1)
+    }
+
     return Math.max(minAvailable, 0)
+  }, [bookedDateCounts, range.from, range.to, selectedItem])
+
+  async function loadItems() {
+    setLoadingItems(true)
+    setError("")
+
+    try {
+      const data = await fetchRentalItems()
+      setItems(data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "대여 물품 정보를 불러오지 못했습니다.")
+    } finally {
+      setLoadingItems(false)
+    }
   }
 
-  const handleOpen = (item: RentalItem) => {
-    setSelectedItem(item)
+  async function loadRentalHistory() {
+    if (!isLoggedIn || !canUseRentalActions) {
+      setRentalHistory([])
+      return
+    }
+
+    setLoadingHistory(true)
+    try {
+      const data = await fetchMyRentalHistory()
+      setRentalHistory(data)
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "내 대여 내역을 불러오지 못했습니다.")
+    } finally {
+      setLoadingHistory(false)
+    }
+  }
+
+  async function loadRentalSchedule(itemId: number) {
+    setLoadingSchedule(true)
+    setScheduleError("")
+
+    try {
+      const data = await fetchRentalSchedule(itemId)
+      setScheduleEntries(data)
+    } catch (err) {
+      setScheduleError(err instanceof Error ? err.message : "예약 일정을 불러오지 못했습니다.")
+      setScheduleEntries([])
+    } finally {
+      setLoadingSchedule(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!hasApiBaseUrl()) {
+      setError("NEXT_PUBLIC_API_BASE_URL 설정이 필요합니다.")
+      setLoadingItems(false)
+      return
+    }
+
+    void loadItems()
+  }, [])
+
+  useEffect(() => {
+    if (sessionLoading || !hasApiBaseUrl()) {
+      return
+    }
+
+    if (!isLoggedIn || !canUseRentalActions) {
+      setRentalHistory([])
+      return
+    }
+
+    void loadRentalHistory()
+  }, [canUseRentalActions, isLoggedIn, sessionLoading])
+
+  useEffect(() => {
+    if (!selectedItemId) {
+      return
+    }
+
+    detailSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }, [selectedItemId])
+
+  function handleOpen(itemId: number) {
+    setSelectedItemId(itemId)
     setRange({})
-    setBorrower("")
-    setPurpose("")
     setQuantityInput("1")
-    setError("")
+    setPurposeInput("")
+    setActionError("")
+    setScheduleError("")
+    void loadRentalSchedule(itemId)
   }
 
-  const handleClose = () => {
-    setSelectedItem(null)
-  }
-
-  const handleSubmit = () => {
-    if (!isAdmin) {
-      setError("관리자만 예약을 추가/수정할 수 있습니다.")
-      return
-    }
-    if (!selectedItem) return
-    if (!borrower.trim()) {
-      setError("대여자를 입력해 주세요.")
-      return
-    }
-    if (!range.from || !range.to) {
-      setError("대여 기간을 선택해 주세요.")
-      return
-    }
-    const requestedQuantity = Number(quantityInput)
-    if (!Number.isFinite(requestedQuantity) || requestedQuantity < 1) {
-      setError("대여 수량은 1개 이상이어야 합니다.")
-      return
-    }
-    const available = getAvailableQuantityForRange(range.from, range.to)
-    if (requestedQuantity > available) {
-      setError(`해당 기간에 대여 가능한 수량은 ${available}개입니다.`)
-      return
-    }
-
-    const newBooking: Booking = {
-      id: `${selectedItem.id}-${Date.now()}`,
-      borrower: borrower.trim(),
-      purpose: purpose.trim() || "사유 미입력",
-      quantity: requestedQuantity,
-      from: range.from,
-      to: range.to,
-    }
-
-    setBookings((prev) => ({
-      ...prev,
-      [selectedItem.id]: [...(prev[selectedItem.id] ?? []), newBooking],
-    }))
+  function handleClose() {
+    setSelectedItemId(null)
     setRange({})
-    setBorrower("")
-    setPurpose("")
-    setError("")
+    setQuantityInput("1")
+    setPurposeInput("")
+    setActionError("")
+    setScheduleError("")
+    setScheduleEntries([])
   }
 
-  //반납
-  const handleReturn = (bookingId: string) => {
-    if (!selectedItem) return
-    if (!isAdmin) {
-      setError("관리자만 반납 처리가 가능합니다.")
+  function handleEditorSaved(savedItem: RentalItem) {
+    setItems((current) => {
+      const exists = current.some((item) => item.itemId === savedItem.itemId)
+      if (!exists) {
+        return [savedItem, ...current]
+      }
+
+      return current.map((item) => (item.itemId === savedItem.itemId ? savedItem : item))
+    })
+
+    if (selectedItemId === savedItem.itemId) {
+      setSelectedItemId(savedItem.itemId)
+    }
+  }
+
+  async function refreshAfterMutation() {
+    await Promise.all([
+      loadItems(),
+      isLoggedIn && canUseRentalActions ? loadRentalHistory() : Promise.resolve(),
+      selectedItemId ? loadRentalSchedule(selectedItemId) : Promise.resolve(),
+    ])
+  }
+
+  async function handleRent() {
+    if (!selectedItem) {
       return
     }
-    setBookings((prev) => ({
-      ...prev,
-      [selectedItem.id]: (prev[selectedItem.id] ?? []).filter((booking) => booking.id !== bookingId),
-    }))
+
+    if (!isLoggedIn) {
+      setActionError("로그인 후 대여할 수 있습니다.")
+      return
+    }
+
+    if (!canUseRentalActions) {
+      setActionError("대여와 반납은 어드민 및 두음 회원만 사용할 수 있습니다.")
+      return
+    }
+
+    if (!range.from || !range.to) {
+      setActionError("대여 기간을 달력에서 선택해 주세요.")
+      return
+    }
+
+    if (!purposeInput.trim()) {
+      setActionError("대여 사유를 입력해 주세요.")
+      return
+    }
+
+    const quantity = Number(quantityInput)
+    if (!Number.isFinite(quantity) || quantity < 1) {
+      setActionError("대여 수량은 1개 이상이어야 합니다.")
+      return
+    }
+
+    const selectedDayCount = getDayCount(range.from, range.to)
+    if (selectedDayCount > selectedItem.maxRentalDays) {
+      setActionError(`최대 대여 기간은 ${selectedItem.maxRentalDays}일입니다.`)
+      return
+    }
+
+    if (quantity > availableQuantityForRange) {
+      setActionError(`선택한 기간에 대여 가능한 수량은 ${availableQuantityForRange}개입니다.`)
+      return
+    }
+
+    setSubmitting(true)
+    setActionError("")
+
+    try {
+      await createRental({
+        itemId: selectedItem.itemId,
+        quantity,
+        startDate: toApiDate(range.from),
+        endDate: toApiDate(range.to),
+        purpose: purposeInput.trim(),
+      })
+
+      setRange({})
+      setQuantityInput("1")
+      setPurposeInput("")
+      await refreshAfterMutation()
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "대여 신청 중 오류가 발생했습니다.")
+    } finally {
+      setSubmitting(false)
+    }
   }
 
-  const isCurrentlyRented = (itemId: string) => {
-    const today = new Date()
-    const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate())
-    const item = rentalItems.find((entry) => entry.id === itemId)
-    const total = item?.totalQuantity ?? 0
-    const bookedToday = (bookings[itemId] ?? [])
-      .filter((booking) => {
-        const from = new Date(booking.from.getFullYear(), booking.from.getMonth(), booking.from.getDate())
-        const to = new Date(booking.to.getFullYear(), booking.to.getMonth(), booking.to.getDate())
-        return todayOnly >= from && todayOnly <= to
-      })
-      .reduce((sum, booking) => sum + booking.quantity, 0)
-    if (total === 0) return false
-    return bookedToday >= total
+  async function handleReturn(rentalId: number) {
+    if (!isLoggedIn) {
+      setActionError("로그인 후 반납할 수 있습니다.")
+      return
+    }
+
+    if (!canUseRentalActions) {
+      setActionError("대여와 반납은 어드민 및 두음 회원만 사용할 수 있습니다.")
+      return
+    }
+
+    setSubmitting(true)
+    setActionError("")
+
+    try {
+      await returnRental(rentalId)
+      await refreshAfterMutation()
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "반납 처리 중 오류가 발생했습니다.")
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function handleDeleteItem(item: RentalItem) {
+    if (!canManageRentalItems) {
+      return
+    }
+
+    if (!window.confirm(`${item.name} 물품을 삭제할까요?`)) {
+      return
+    }
+
+    setManagingItemId(item.itemId)
+    setDeleteError("")
+
+    try {
+      await deleteRentalItem(item.itemId)
+      setItems((current) => current.filter((entry) => entry.itemId !== item.itemId))
+      if (selectedItemId === item.itemId) {
+        handleClose()
+      }
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "물품 삭제 중 오류가 발생했습니다.")
+    } finally {
+      setManagingItemId(null)
+    }
   }
 
   return (
@@ -238,184 +569,640 @@ export default function RentalPage() {
     >
       <HeaderNav />
 
-      <main className="mx-auto max-w-6xl px-6 pb-20 pt-16">
-        <div className="mb-12 text-center">
-          <h1 className="text-3xl font-bold text-gray-900 md:text-4xl">동아리 물품 대여</h1>
-        </div>
+      <main className="mx-auto max-w-6xl px-6 pb-20 pt-12 sm:pt-16">
+        <section className="mb-14 flex flex-col items-center text-center">
+          <div className="relative flex h-28 w-28 items-center justify-center rounded-full bg-white/70 shadow-[0_18px_50px_rgba(65,106,133,0.12)] backdrop-blur-sm">
+            <Image src="/doum-logo-large.png" alt="DO,UM 로고" width={62} height={88} priority />
+          </div>
+          <p className="mt-8 inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#6a7d88]">
+            <Sparkles className="size-3.5" />
+            Rental Archive
+          </p>
+          <h1 className="mt-6 text-4xl font-black tracking-tight text-black sm:text-5xl">물품 대여</h1>
+          <p className="mt-4 max-w-3xl text-base text-[#677680] sm:text-lg">
+            물품 목록과 상세 조회는 누구나 가능하며, 실제 대여는 달력에서 기간을 선택하고 사유를 입력해야 신청할 수 있습니다.
+          </p>
+        </section>
+
+        {error ? (
+          <div className="mb-8 rounded-2xl border border-[#f1cccc] bg-[#fff6f6] px-5 py-4 text-sm text-[#9a3b3b]">
+            {error}
+          </div>
+        ) : null}
 
         <section>
-          <h2 className="mb-6 text-lg font-bold text-gray-900">대여 가능 물품</h2>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {rentalItems.slice(0, 9).map((item) => {
-              const computedStatus = isCurrentlyRented(item.id) ? "대여중" : "대여가능"
-              const styles = statusStyles[computedStatus]
-              return (
-                <article
-                  key={item.id}
-                  className="overflow-hidden rounded-2xl bg-white shadow-[0_8px_20px_rgba(0,0,0,0.08)] transition-transform duration-200 hover:-translate-y-1"
-                  onClick={() => handleOpen(item)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault()
-                      handleOpen(item)
-                    }
-                  }}
+          <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">대여 가능 물품</h2>
+              <p className="mt-1 text-sm text-gray-600">
+                {searchQuery.trim() ? (
+                  <>
+                    검색 결과 <span className="font-semibold text-gray-900">{filteredItems.length}</span>개
+                    <span className="mx-1 text-gray-400">/</span>전체
+                    <span className="ml-1 font-semibold text-gray-900">{items.length}</span>개 물품
+                  </>
+                ) : (
+                  <>
+                    총 <span className="font-semibold text-gray-900">{items.length}</span>개 물품
+                  </>
+                )}
+              </p>
+            </div>
+            <div className="flex w-full flex-col gap-3 sm:flex-row lg:w-auto">
+              <div className="relative w-full sm:max-w-xs">
+                <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[#7b8f99]" />
+                <Input
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="물품 이름 또는 분류 검색"
+                  className="h-11 rounded-full border-[#d7e5ee] bg-white/90 pl-11 pr-11 text-sm text-[#243440] placeholder:text-[#8ca0aa]"
+                />
+                {searchQuery ? (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 inline-flex size-7 -translate-y-1/2 items-center justify-center rounded-full text-[#7b8f99] transition hover:bg-[#eef4f8] hover:text-[#355264]"
+                    aria-label="검색어 지우기"
+                  >
+                    <X className="size-4" />
+                  </button>
+                ) : null}
+              </div>
+              {canManageRentalItems ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditorState({ mode: "create", item: null })}
+                  className="rounded-full border-[#d7e5ee] bg-white/90 px-4 text-[#355264] hover:bg-white"
                 >
-                  <div className="relative h-44 w-full bg-[#f3f3f3]">
+                  <Plus className="size-4" />
+                  물품 추가
+                </Button>
+              ) : null}
+            </div>
+          </div>
+          {deleteError ? (
+            <div className="mb-6 rounded-2xl border border-[#f1cccc] bg-[#fff6f6] px-5 py-4 text-sm text-[#9a3b3b]">
+              {deleteError}
+            </div>
+          ) : null}
+
+          {loadingItems ? (
+            <div className="rounded-2xl bg-white px-6 py-8 text-center text-sm text-gray-500 shadow-[0_8px_20px_rgba(0,0,0,0.08)]">
+              대여 물품 정보를 불러오는 중입니다...
+            </div>
+          ) : filteredItems.length ? (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {filteredItems.map((item) => {
+                const statusMeta = getItemStatusMeta(item)
+                const itemImageUrl = resolveMediaUrl(item.itemImage) || "/placeholder.svg"
+
+                return (
+                  <article
+                    key={item.itemId}
+                    className={`overflow-hidden rounded-2xl bg-white shadow-[0_8px_20px_rgba(0,0,0,0.08)] transition-transform duration-200 hover:-translate-y-1 ${
+                      selectedItemId === item.itemId ? "ring-2 ring-[#9ec6df] shadow-[0_18px_34px_rgba(72,122,151,0.18)]" : ""
+                    }`}
+                    onClick={() => handleOpen(item.itemId)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault()
+                        handleOpen(item.itemId)
+                      }
+                    }}
+                  >
+                    <div className="relative h-32 w-full bg-[#f3f3f3] sm:h-36">
+                      <Image
+                        src={itemImageUrl}
+                        alt={item.name}
+                        fill
+                        className="object-cover"
+                        sizes="(min-width: 1024px) 320px, (min-width: 768px) 45vw, 90vw"
+                      />
+                      {canManageRentalItems ? (
+                        <div className="absolute right-3 top-3 z-10 flex items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={(event) => {
+                              event.preventDefault()
+                              event.stopPropagation()
+                              setEditorState({ mode: "edit", item })
+                            }}
+                            className="rounded-full bg-white/88 text-[#355264] shadow-sm hover:bg-white"
+                          >
+                            <PencilLine className="size-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            disabled={managingItemId === item.itemId}
+                            onClick={(event) => {
+                              event.preventDefault()
+                              event.stopPropagation()
+                              void handleDeleteItem(item)
+                            }}
+                            className="rounded-full bg-white/88 text-[#a44a4a] shadow-sm hover:bg-white"
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </div>
+                      ) : null}
+                    </div>
+                    <div className="space-y-2.5 px-4 py-3">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <h3 className="text-base font-semibold text-gray-900">{item.name}</h3>
+                          <p className="mt-0.5 text-[11px] font-medium text-[#7b8f99]">
+                            {item.category}
+                          </p>
+                        </div>
+                        <span className={`flex items-center gap-1.5 text-[12px] font-medium ${statusMeta.textClassName}`}>
+                          <span className={`h-2 w-2 rounded-full ${statusMeta.dotClassName}`} />
+                          {statusMeta.label}
+                        </span>
+                      </div>
+                      <p className="h-10 overflow-hidden text-[13px] leading-5 text-gray-600">
+                        {item.description || "물품 설명이 아직 등록되지 않았습니다."}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-gray-600">
+                        <span className="rounded-full bg-[#f1f6f9] px-3 py-1.5">총 {item.totalQuantity}개</span>
+                        <span className="rounded-full bg-[#f1f6f9] px-3 py-1.5">
+                          오늘 대여 가능 {item.availableQuantity}개
+                        </span>
+                        <span className="rounded-full bg-[#f1f6f9] px-3 py-1.5">
+                          최대 {item.maxRentalDays}일
+                        </span>
+                      </div>
+                    </div>
+                  </article>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="rounded-2xl bg-white px-6 py-8 text-center text-sm text-gray-500 shadow-[0_8px_20px_rgba(0,0,0,0.08)]">
+              {searchQuery.trim() ? "검색 조건에 맞는 물품이 없습니다." : "등록된 대여 물품이 없습니다."}
+            </div>
+          )}
+        </section>
+
+        {selectedItem ? (
+          <section
+            ref={detailSectionRef}
+            className="mt-12 overflow-hidden rounded-[32px] bg-[#f9f6f1] shadow-[0_22px_70px_rgba(29,49,63,0.12)]"
+          >
+            <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_0.9fr]">
+              <div className="border-b border-[#e8ecef] bg-[#f3f6f8] p-5 lg:border-b-0 lg:border-r lg:p-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#6a7d88]">대여 상세</p>
+                    <h2 className="mt-2 text-2xl font-bold text-gray-900">{selectedItem.name}</h2>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={handleClose}
+                    className="rounded-full text-[#5d7482] hover:bg-white/70 hover:text-[#223541]"
+                    aria-label="상세 닫기"
+                  >
+                    <X className="size-4" />
+                  </Button>
+                </div>
+
+                <div className="mt-4 overflow-hidden rounded-3xl bg-white shadow-[0_16px_40px_rgba(47,74,91,0.08)]">
+                  <div className="relative h-52 w-full bg-[#e9eef1]">
                     <Image
-                      src={item.image || "/placeholder.svg"}
-                      alt={item.name}
+                      src={resolveMediaUrl(selectedItem.itemImage) || "/placeholder.svg"}
+                      alt={selectedItem.name}
                       fill
                       className="object-cover"
-                      sizes="(min-width: 1024px) 320px, (min-width: 768px) 45vw, 90vw"
+                      sizes="(min-width: 1024px) 540px, 100vw"
                     />
                   </div>
-                  <div className="flex items-center justify-between px-5 py-4">
-                    <h3 className="text-lg font-semibold text-gray-900">{item.name}</h3>
-                    <div className="flex items-center gap-4 text-sm">
-                      <span className="text-xs text-gray-500">총 {item.totalQuantity}개</span>
-                      <span className={`flex items-center gap-2 font-medium ${styles.text}`}>
-                        <span className={`h-2.5 w-2.5 rounded-full ${styles.dot}`} />
-                        {computedStatus}
-                      </span>
-                    </div>
+                  <div className="flex flex-wrap items-center gap-2 px-5 py-4 text-xs text-gray-600">
+                    <span className="rounded-full bg-[#f1f6f9] px-3 py-1.5">{selectedItem.category}</span>
+                    <span className="rounded-full bg-[#f1f6f9] px-3 py-1.5">총 {selectedItem.totalQuantity}개</span>
+                    <span className="rounded-full bg-[#f1f6f9] px-3 py-1.5">최대 {selectedItem.maxRentalDays}일</span>
                   </div>
-                </article>
-              )
-            })}
-          </div>
-        </section>
-      </main>
+                </div>
 
-      <Dialog open={!!selectedItem} onOpenChange={(open) => (!open ? handleClose() : null)}>
-        <DialogContent className="h-[720px] !w-[64vw] !max-w-[64vw] max-h-[92vh] gap-0 overflow-hidden rounded-3xl bg-[#f9f6f1] p-0 sm:!w-[64vw] sm:!max-w-[64vw]">
-          {selectedItem && (
-            <div className="h-full overflow-y-auto p-5">
-              <DialogHeader className="mb-3">
-                <DialogTitle className="text-2xl font-bold text-gray-900">
-                  {selectedItem.name}
-                </DialogTitle>
-              </DialogHeader>
-
-              <div className="grid gap-5 lg:grid-cols-[1.8fr_1fr]">
-                <div className="rounded-2xl bg-white p-4 shadow-[0_8px_20px_rgba(0,0,0,0.08)]">
-                  <div className="flex items-center justify-between">
+                <div className="mt-5 rounded-3xl bg-white p-4 shadow-[0_16px_40px_rgba(47,74,91,0.08)]">
+                  <p className="text-sm font-semibold text-gray-800">대여 기간 선택</p>
+                  <div className="mt-4 overflow-x-auto">
                     <Calendar
                       mode="range"
                       selected={range}
                       onSelect={(nextRange) => {
                         setRange(nextRange ?? {})
-                        setError("")
+                        setActionError("")
                       }}
-                      disabled={(date) => bookedDates.some((d) => d.toDateString() === date.toDateString())}
-                      modifiers={{ booked: (date) => bookedDates.some((d) => d.toDateString() === date.toDateString()) }}
+                      disabled={(date) =>
+                        startOfDay(date) < startOfDay() ||
+                        fullyBookedDates.some((blockedDate) => blockedDate.toDateString() === date.toDateString())
+                      }
+                      modifiers={{
+                        booked: (date) =>
+                          fullyBookedDates.some((blockedDate) => blockedDate.toDateString() === date.toDateString()),
+                      }}
                       modifiersClassNames={{
                         booked: "bg-blue-100 text-blue-900 opacity-60",
                       }}
-                      className="w-full [--cell-size:--spacing(5)]"
+                      components={{
+                        DayButton: (props) => {
+                          const dateKey = toDateKey(props.day.date)
+
+                          return (
+                            <RentalScheduleDayButton
+                              {...props}
+                              label={reservationLabelsByDate.get(dateKey)}
+                              tooltip={reservationTooltipsByDate.get(dateKey)}
+                            />
+                          )
+                        },
+                      }}
+                      className="w-full [--cell-size:--spacing(10)]"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-5">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="rounded-2xl bg-white p-4 shadow-[0_8px_20px_rgba(0,0,0,0.08)]">
-                      <p className="text-sm font-semibold text-gray-700">대여 불가 일자</p>
-                      <div className="mt-3 flex items-center gap-2 text-sm text-gray-600">
-                        <span className="h-3 w-3 rounded bg-blue-200" />
-                        다른 사람이 대여한 날짜
-                      </div>
-                    </div>
-
-                    <div className="rounded-2xl bg-white p-4 text-sm text-gray-700 shadow-[0_8px_20px_rgba(0,0,0,0.08)]">
-                      <p className="font-semibold">대여중인 물품의 사용 시간대 외 사용 시</p>
-                      <p className="mt-2 text-xs text-gray-600">
-                        대여자에게 확인 후 사용 바랍니다.
-                      </p>
-                    </div>
-
-                    <div className="rounded-2xl bg-white p-4 text-sm text-gray-700 shadow-[0_8px_20px_rgba(0,0,0,0.08)] md:col-span-2">
-                      <p className="mb-2 text-sm font-semibold text-gray-800">현재 대여 목록</p>
-                      {selectedBookings.length === 0 ? (
-                        <p className="text-xs text-gray-500">현재 대여된 일정이 없습니다.</p>
-                      ) : (
-                        <ul className="max-h-20 space-y-1 overflow-y-auto text-xs text-gray-600">
-                          {selectedBookings.map((booking) => (
-                            <li key={booking.id} className="flex items-center justify-between gap-2">
-                              <span>
-                                {booking.borrower} · {booking.purpose} · {booking.quantity}개 ·{" "}
-                                {booking.from.toLocaleDateString()} ~ {booking.to.toLocaleDateString()}
-                              </span>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-7 px-2 text-[11px]"
-                                onClick={() => handleReturn(booking.id)}
-                                disabled={!isAdmin}
-                              >
-                                반납
-                              </Button>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
+                <div className="mt-5 grid gap-4 md:grid-cols-2">
+                  <div className="rounded-3xl bg-white p-4 shadow-[0_16px_40px_rgba(47,74,91,0.06)]">
+                    <p className="text-sm font-semibold text-gray-800">예약 안내</p>
+                    <p className="mt-3 text-sm leading-6 text-gray-600">
+                      달력의 예약 표시는 해당 날짜에 이미 예약을 진행한 사람입니다. 수량이 모두 찬 날짜는 선택할 수 없습니다.
+                    </p>
                   </div>
-
-                  <div className="rounded-2xl bg-white p-5 shadow-[0_8px_20px_rgba(0,0,0,0.08)]">
-                    <p className="text-sm font-semibold text-gray-700">대여 정보 입력</p>
-                    <div className="mt-4 space-y-3">
-                      <Input
-                        type="number"
-                        min={1}
-                        max={selectedItem.totalQuantity}
-                        value={quantityInput}
-                        onChange={(e) => setQuantityInput(e.target.value)}
-                        placeholder="대여 수량"
-                        disabled={!isAdmin}
-                      />
-                      <Input
-                        value={borrower}
-                        onChange={(e) => setBorrower(e.target.value)}
-                        placeholder="대여자 이름"
-                        disabled={!isAdmin}
-                      />
-                      <Textarea
-                        value={purpose}
-                        onChange={(e) => setPurpose(e.target.value)}
-                        placeholder="대여 사유"
-                        className="min-h-[70px]"
-                        disabled={!isAdmin}
-                      />
-                      <div className="text-xs text-gray-600">
-                        선택된 기간:{" "}
-                        {range.from && range.to
-                          ? `${range.from.toLocaleDateString()} ~ ${range.to.toLocaleDateString()}`
-                          : "기간을 선택해 주세요."}
-                      </div>
-                      <div className="text-xs text-gray-600">
-                        선택 기간 대여 가능 수량: {getAvailableQuantityForRange(range.from, range.to)}개
-                      </div>
-                      {!isAdmin && (
-                        <p className="text-xs text-gray-500">
-                          예약 추가/수정은 관리자만 가능합니다.
-                        </p>
-                      )}
-                      {error && <p className="text-xs text-red-500">{error}</p>}
-                      <Button className="w-full" onClick={handleSubmit} disabled={!isAdmin}>
-                        대여 신청
-                      </Button>
-                    </div>
+                  <div className="rounded-3xl bg-white p-4 shadow-[0_16px_40px_rgba(47,74,91,0.06)]">
+                    <p className="text-sm font-semibold text-gray-800">선택 기간 가용 수량</p>
+                    <p className="mt-3 text-2xl font-bold text-[#223541]">{availableQuantityForRange}개</p>
+                    <p className="mt-2 text-xs text-gray-500">최대 대여 기간은 {selectedItem.maxRentalDays}일입니다.</p>
                   </div>
+                </div>
 
+                <div className="mt-5 rounded-3xl bg-white p-4 shadow-[0_16px_40px_rgba(47,74,91,0.06)]">
+                  <p className="text-sm font-semibold text-gray-800">현재 예약 일정</p>
+                  {scheduleError ? <p className="mt-3 text-sm text-red-500">{scheduleError}</p> : null}
+                  {loadingSchedule ? (
+                    <p className="mt-3 text-sm text-gray-500">예약 일정을 불러오는 중입니다...</p>
+                  ) : scheduleEntries.length ? (
+                    <ul className="mt-3 space-y-2 text-sm text-gray-600">
+                      {scheduleEntries.map((entry) => (
+                        <li
+                          key={entry.rentalId}
+                          className="rounded-2xl border border-[#e3edf2] bg-[#f8fbfd] px-3 py-3"
+                        >
+                          <p className="text-sm font-medium text-gray-700">
+                            {formatDateRange(entry.startDate, entry.endDate)} · {entry.quantity}개 예약
+                          </p>
+                          <p className="mt-1 text-sm font-medium text-[#355264]">
+                            {entry.reservedByName ? `예약자 ${entry.reservedByName}` : "예약자 정보 없음"}
+                          </p>
+                          <p className="mt-1 text-sm text-gray-500">{entry.purpose || "사유 미입력"}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-3 text-sm text-gray-500">현재 예약된 일정이 없습니다.</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-6">
+                <div className="rounded-3xl bg-white p-5 shadow-[0_16px_40px_rgba(47,74,91,0.06)]">
+                  <p className="text-sm font-semibold text-gray-800">물품 설명</p>
+                  <p className="mt-3 text-sm leading-6 text-gray-600">
+                    {selectedItem.description || "물품 설명이 아직 등록되지 않았습니다."}
+                  </p>
+                </div>
+
+                <div className="mt-5 rounded-3xl bg-white p-5 shadow-[0_16px_40px_rgba(47,74,91,0.06)]">
+                  <p className="text-sm font-semibold text-gray-800">대여 정보 입력</p>
+                  <div className="mt-4 space-y-3">
+                    <Input
+                      type="number"
+                      min={1}
+                      max={selectedItem.totalQuantity}
+                      value={quantityInput}
+                      onChange={(event) => setQuantityInput(event.target.value)}
+                      placeholder="대여 수량"
+                      disabled={!isLoggedIn || !canUseRentalActions || submitting}
+                    />
+                    <Textarea
+                      value={purposeInput}
+                      onChange={(event) => setPurposeInput(event.target.value)}
+                      placeholder="대여 사유를 입력해 주세요."
+                      className="min-h-[120px]"
+                      disabled={!isLoggedIn || !canUseRentalActions || submitting}
+                    />
+                    <div className="rounded-2xl bg-[#f7fafc] px-4 py-3 text-xs text-gray-600">
+                      선택한 기간:{" "}
+                      {range.from && range.to
+                        ? `${formatDate(toApiDate(range.from))} ~ ${formatDate(toApiDate(range.to))}`
+                        : "기간을 선택해 주세요."}
+                    </div>
+                    {!isLoggedIn ? (
+                      <p className="text-xs text-gray-500">로그인 후 대여할 수 있습니다.</p>
+                    ) : !canUseRentalActions ? (
+                      <p className="text-xs text-gray-500">현재 계정은 조회 전용입니다. 어드민 및 두음 회원만 대여할 수 있습니다.</p>
+                    ) : null}
+                    {actionError ? <p className="text-xs text-red-500">{actionError}</p> : null}
+                    <Button
+                      className="w-full"
+                      onClick={handleRent}
+                      disabled={!isLoggedIn || !canUseRentalActions || submitting || getItemStatusMeta(selectedItem).disabled}
+                    >
+                      {submitting ? "처리 중.." : "대여 신청"}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="mt-5 rounded-3xl bg-white p-5 shadow-[0_16px_40px_rgba(47,74,91,0.06)]">
+                  <p className="text-sm font-semibold text-gray-800">이 물품의 내 대여 내역</p>
+                  {!isLoggedIn ? (
+                    <p className="mt-3 text-sm text-gray-500">로그인 후 확인할 수 있습니다.</p>
+                  ) : !canUseRentalActions ? (
+                    <p className="mt-3 text-sm text-gray-500">현재 계정은 조회 전용입니다.</p>
+                  ) : selectedItemRentals.length ? (
+                    <div className="mt-3 space-y-2">
+                      {selectedItemRentals.map((rental) => (
+                        <div
+                          key={rental.rentalId}
+                          className="rounded-2xl border border-[#e3edf2] bg-[#f8fbfd] px-4 py-4"
+                        >
+                          <p className="text-sm font-semibold text-gray-800">
+                            {formatDateRange(rental.startDate, rental.endDate)} · {rental.quantity}개
+                          </p>
+                          <p className="mt-2 text-sm text-gray-600">{rental.purpose || "사유 미입력"}</p>
+                          <p className="mt-1 text-xs text-gray-500">신청 시각 {formatDateTime(rental.rentedAt)}</p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleReturn(rental.rentalId)}
+                            disabled={submitting}
+                            className="mt-3 rounded-full border-[#d7e5ee] bg-white px-4 text-[#355264] hover:bg-[#f5fbfe]"
+                          >
+                            반납하기
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-3 text-sm text-gray-500">현재 이 물품으로 진행 중인 내 대여 기록이 없습니다.</p>
+                  )}
                 </div>
               </div>
             </div>
+          </section>
+        ) : null}
+
+        <section className="mt-12 rounded-2xl bg-white/88 p-6 shadow-[0_8px_20px_rgba(0,0,0,0.08)]">
+          <div className="mb-4 flex items-center justify-between gap-4">
+            <h2 className="text-lg font-bold text-gray-900">내 대여 현황</h2>
+            <p className="text-sm text-gray-600">
+              {isLoggedIn && canUseRentalActions
+                ? `현재 대여 중 ${activeRentals.length}건`
+                : "어드민 및 두음 회원 로그인 시 대여 내역을 확인할 수 있습니다."}
+            </p>
+          </div>
+
+          {!isLoggedIn ? (
+            <p className="text-sm text-gray-500">로그인 후 물품 대여 권한을 확인할 수 있습니다.</p>
+          ) : !canUseRentalActions ? (
+            <p className="text-sm text-gray-500">현재 계정은 조회 전용입니다. 대여와 반납은 어드민 및 두음 회원만 가능합니다.</p>
+          ) : loadingHistory ? (
+            <p className="text-sm text-gray-500">내 대여 내역을 불러오는 중입니다...</p>
+          ) : activeRentals.length ? (
+            <div className="space-y-3">
+              {activeRentals.map((rental) => (
+                <div
+                  key={rental.rentalId}
+                  className="flex flex-col gap-3 rounded-2xl border border-[#e3edf2] bg-[#f8fbfd] px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div>
+                    <p className="font-semibold text-gray-900">{rental.itemName}</p>
+                    <p className="mt-1 text-sm text-gray-600">
+                      {rental.quantity}개 · {formatDateRange(rental.startDate, rental.endDate)}
+                    </p>
+                    <p className="mt-1 text-sm text-gray-500">{rental.purpose || "사유 미입력"}</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleReturn(rental.rentalId)}
+                    disabled={submitting}
+                    className="rounded-full border-[#d7e5ee] bg-white px-4 text-[#355264] hover:bg-[#f5fbfe]"
+                  >
+                    반납하기
+                  </Button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500">현재 대여 중인 물품이 없습니다.</p>
           )}
+        </section>
+      </main>
+
+      {false ? (
+        <DialogContent className="max-h-[92vh] !w-[min(1120px,calc(100vw-1rem))] !max-w-[1120px] overflow-hidden rounded-3xl bg-[#f9f6f1] p-0">
+          {selectedItem ? (
+            <div className="grid max-h-[92vh] grid-cols-1 overflow-hidden lg:grid-cols-[1.3fr_0.9fr]">
+              <div className="overflow-y-auto border-b border-[#e8ecef] bg-[#f3f6f8] p-5 lg:border-b-0 lg:border-r lg:p-6">
+                <DialogHeader className="text-left">
+                  <DialogTitle className="text-2xl font-bold text-gray-900">{selectedItem.name}</DialogTitle>
+                </DialogHeader>
+
+                <div className="mt-4 overflow-hidden rounded-3xl bg-white shadow-[0_16px_40px_rgba(47,74,91,0.08)]">
+                  <div className="relative h-52 w-full bg-[#e9eef1]">
+                    <Image
+                      src={resolveMediaUrl(selectedItem.itemImage) || "/placeholder.svg"}
+                      alt={selectedItem.name}
+                      fill
+                      className="object-cover"
+                      sizes="(min-width: 1024px) 540px, 100vw"
+                    />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 px-5 py-4 text-xs text-gray-600">
+                    <span className="rounded-full bg-[#f1f6f9] px-3 py-1.5">{selectedItem.category}</span>
+                    <span className="rounded-full bg-[#f1f6f9] px-3 py-1.5">총 {selectedItem.totalQuantity}개</span>
+                    <span className="rounded-full bg-[#f1f6f9] px-3 py-1.5">최대 {selectedItem.maxRentalDays}일</span>
+                  </div>
+                </div>
+
+                <div className="mt-5 rounded-3xl bg-white p-4 shadow-[0_16px_40px_rgba(47,74,91,0.08)]">
+                  <p className="text-sm font-semibold text-gray-800">대여 기간 선택</p>
+                  <div className="mt-4 overflow-x-auto">
+                    <Calendar
+                      mode="range"
+                      selected={range}
+                      onSelect={(nextRange) => {
+                        setRange(nextRange ?? {})
+                        setActionError("")
+                      }}
+                      disabled={(date) =>
+                        startOfDay(date) < startOfDay() ||
+                        fullyBookedDates.some((blockedDate) => blockedDate.toDateString() === date.toDateString())
+                      }
+                      modifiers={{
+                        booked: (date) =>
+                          fullyBookedDates.some((blockedDate) => blockedDate.toDateString() === date.toDateString()),
+                      }}
+                      modifiersClassNames={{
+                        booked: "bg-blue-100 text-blue-900 opacity-60",
+                      }}
+                      components={{
+                        DayButton: (props) => {
+                          const dateKey = toDateKey(props.day.date)
+
+                          return (
+                            <RentalScheduleDayButton
+                              {...props}
+                              label={reservationLabelsByDate.get(dateKey)}
+                              tooltip={reservationTooltipsByDate.get(dateKey)}
+                            />
+                          )
+                        },
+                      }}
+                      className="w-full [--cell-size:--spacing(10)]"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-5 grid gap-4 md:grid-cols-2">
+                  <div className="rounded-3xl bg-white p-4 shadow-[0_16px_40px_rgba(47,74,91,0.06)]">
+                    <p className="text-sm font-semibold text-gray-800">예약 안내</p>
+                    <p className="mt-3 text-sm leading-6 text-gray-600">
+                      선택 기간 동안 재고가 모두 차는 날짜는 달력에서 자동으로 비활성화됩니다.
+                    </p>
+                  </div>
+                  <div className="rounded-3xl bg-white p-4 shadow-[0_16px_40px_rgba(47,74,91,0.06)]">
+                    <p className="text-sm font-semibold text-gray-800">선택 기간 가용 수량</p>
+                    <p className="mt-3 text-2xl font-bold text-[#223541]">{availableQuantityForRange}개</p>
+                    <p className="mt-2 text-xs text-gray-500">최대 대여 기간은 {selectedItem.maxRentalDays}일입니다.</p>
+                  </div>
+                </div>
+
+                <div className="mt-5 rounded-3xl bg-white p-4 shadow-[0_16px_40px_rgba(47,74,91,0.06)]">
+                  <p className="text-sm font-semibold text-gray-800">현재 예약 일정</p>
+                  {scheduleError ? <p className="mt-3 text-sm text-red-500">{scheduleError}</p> : null}
+                  {loadingSchedule ? (
+                    <p className="mt-3 text-sm text-gray-500">예약 일정을 불러오는 중입니다...</p>
+                  ) : scheduleEntries.length ? (
+                    <ul className="mt-3 space-y-2 text-sm text-gray-600">
+                      {scheduleEntries.map((entry) => (
+                        <li
+                          key={entry.rentalId}
+                          className="rounded-2xl border border-[#e3edf2] bg-[#f8fbfd] px-3 py-3"
+                        >
+                          <p className="text-sm font-medium text-gray-700">
+                            {formatDateRange(entry.startDate, entry.endDate)} · {entry.quantity}개 예약
+                          </p>
+                          <p className="mt-1 text-sm font-medium text-[#355264]">
+                            {entry.reservedByName ? `예약자 ${entry.reservedByName}` : "예약자 정보 없음"}
+                          </p>
+                          <p className="mt-1 text-sm text-gray-500">{entry.purpose || "사유 미입력"}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-3 text-sm text-gray-500">현재 예약된 일정이 없습니다.</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="overflow-y-auto p-6">
+                <div className="rounded-3xl bg-white p-5 shadow-[0_16px_40px_rgba(47,74,91,0.06)]">
+                  <p className="text-sm font-semibold text-gray-800">물품 설명</p>
+                  <p className="mt-3 text-sm leading-6 text-gray-600">
+                    {selectedItem.description || "물품 설명이 아직 등록되지 않았습니다."}
+                  </p>
+                </div>
+
+                <div className="mt-5 rounded-3xl bg-white p-5 shadow-[0_16px_40px_rgba(47,74,91,0.06)]">
+                  <p className="text-sm font-semibold text-gray-800">대여 정보 입력</p>
+                  <div className="mt-4 space-y-3">
+                    <Input
+                      type="number"
+                      min={1}
+                      max={selectedItem.totalQuantity}
+                      value={quantityInput}
+                      onChange={(event) => setQuantityInput(event.target.value)}
+                      placeholder="대여 수량"
+                      disabled={!isLoggedIn || !canUseRentalActions || submitting}
+                    />
+                    <Textarea
+                      value={purposeInput}
+                      onChange={(event) => setPurposeInput(event.target.value)}
+                      placeholder="대여 사유를 입력해 주세요."
+                      className="min-h-[120px]"
+                      disabled={!isLoggedIn || !canUseRentalActions || submitting}
+                    />
+                    <div className="rounded-2xl bg-[#f7fafc] px-4 py-3 text-xs text-gray-600">
+                      선택된 기간:{" "}
+                      {range.from && range.to
+                        ? `${formatDate(toApiDate(range.from))} ~ ${formatDate(toApiDate(range.to))}`
+                        : "기간을 선택해 주세요."}
+                    </div>
+                    {!isLoggedIn ? (
+                      <p className="text-xs text-gray-500">로그인 후 대여할 수 있습니다.</p>
+                    ) : !canUseRentalActions ? (
+                      <p className="text-xs text-gray-500">현재 계정은 조회 전용입니다. 어드민 및 두음 회원만 대여할 수 있습니다.</p>
+                    ) : null}
+                    {actionError ? <p className="text-xs text-red-500">{actionError}</p> : null}
+                    <Button
+                      className="w-full"
+                      onClick={handleRent}
+                      disabled={!isLoggedIn || !canUseRentalActions || submitting || getItemStatusMeta(selectedItem).disabled}
+                    >
+                      {submitting ? "처리 중..." : "대여 신청"}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="mt-5 rounded-3xl bg-white p-5 shadow-[0_16px_40px_rgba(47,74,91,0.06)]">
+                  <p className="text-sm font-semibold text-gray-800">이 물품의 내 대여 내역</p>
+                  {!isLoggedIn ? (
+                    <p className="mt-3 text-sm text-gray-500">로그인 후 확인할 수 있습니다.</p>
+                  ) : !canUseRentalActions ? (
+                    <p className="mt-3 text-sm text-gray-500">현재 계정은 조회 전용입니다.</p>
+                  ) : selectedItemRentals.length ? (
+                    <div className="mt-3 space-y-2">
+                      {selectedItemRentals.map((rental) => (
+                        <div
+                          key={rental.rentalId}
+                          className="rounded-2xl border border-[#e3edf2] bg-[#f8fbfd] px-4 py-4"
+                        >
+                          <p className="text-sm font-semibold text-gray-800">
+                            {formatDateRange(rental.startDate, rental.endDate)} · {rental.quantity}개
+                          </p>
+                          <p className="mt-2 text-sm text-gray-600">{rental.purpose || "사유 미입력"}</p>
+                          <p className="mt-1 text-xs text-gray-500">신청 시각 {formatDateTime(rental.rentedAt)}</p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleReturn(rental.rentalId)}
+                            disabled={submitting}
+                            className="mt-3 rounded-full border-[#d7e5ee] bg-white px-4 text-[#355264] hover:bg-[#f5fbfe]"
+                          >
+                            반납하기
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-3 text-sm text-gray-500">현재 이 물품으로 진행 중인 내 대여 기록이 없습니다.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : null}
         </DialogContent>
-      </Dialog>
+      ) : null}
 
       <footer className="border-t border-gray-300 bg-transparent py-10">
         <div className="mx-auto max-w-4xl px-4 text-center">
@@ -425,6 +1212,18 @@ export default function RentalPage() {
           <p className="text-xs text-gray-500">© DO,UM</p>
         </div>
       </footer>
+
+      <RentalItemEditorDialog
+        open={Boolean(editorState)}
+        mode={editorState?.mode ?? "create"}
+        item={editorState?.item}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditorState(null)
+          }
+        }}
+        onSaved={handleEditorSaved}
+      />
     </div>
   )
 }

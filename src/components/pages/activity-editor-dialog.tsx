@@ -157,7 +157,7 @@ export function ActivityEditorDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[88vh] overflow-y-auto rounded-[28px] border-0 bg-[#f7faf7] p-0 sm:!max-w-[760px]">
+      <DialogContent className="max-h-[88vh] overflow-y-auto rounded-[28px] border-0 bg-[#f7faf7] p-0 sm:!max-w-[820px]">
         <div className="p-6 sm:p-8">
           <DialogHeader className="text-left">
             <DialogTitle className="text-2xl font-bold text-[#1b2832]">
@@ -168,59 +168,88 @@ export function ActivityEditorDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            <label className="space-y-2 sm:col-span-2">
-              <span className="text-sm font-semibold text-[#243845]">활동명</span>
-              <Input
-                value={form.activityId}
-                onChange={(event) => setForm((current) => ({ ...current, activityId: event.target.value }))}
-                placeholder="2025-2 강북엔트리"
-              />
-            </label>
+          <div className="mt-6 space-y-4">
+            <section className="rounded-[24px] border border-[#dbe7ea] bg-white/80 p-4 shadow-[0_12px_30px_rgba(47,74,91,0.05)] sm:p-5">
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold text-[#243845]">기본 정보</h3>
+                <p className="mt-1 text-xs leading-5 text-[#748690]">
+                  카드 제목과 활동 메타데이터에 함께 반영되는 정보입니다.
+                </p>
+              </div>
 
-            <label className="space-y-2">
-              <span className="text-sm font-semibold text-[#243845]">활동 일자</span>
-              <Input
-                type="date"
-                value={form.activityDate}
-                onChange={(event) => setForm((current) => ({ ...current, activityDate: event.target.value }))}
-              />
-            </label>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="space-y-2 sm:col-span-2">
+                  <span className="text-sm font-semibold text-[#243845]">활동명</span>
+                  <Input
+                    value={form.activityId}
+                    onChange={(event) => setForm((current) => ({ ...current, activityId: event.target.value }))}
+                    placeholder="2025-2 강북엔트리"
+                  />
+                </label>
 
-            <label className="space-y-2">
-              <span className="text-sm font-semibold text-[#243845]">참여자 이름</span>
-              <Textarea
-                value={form.participantNames}
-                onChange={(event) => setForm((current) => ({ ...current, participantNames: event.target.value }))}
-                className="min-h-[122px]"
-                placeholder={"한 줄에 한 명씩 입력하세요.\n홍길동\n김국민"}
-              />
-            </label>
+                <label className="space-y-2">
+                  <span className="text-sm font-semibold text-[#243845]">활동 일자</span>
+                  <Input
+                    type="date"
+                    value={form.activityDate}
+                    onChange={(event) =>
+                      setForm((current) => ({ ...current, activityDate: event.target.value }))
+                    }
+                  />
+                </label>
 
-            <label className="space-y-2 sm:col-span-2">
-              <span className="text-sm font-semibold text-[#243845]">활동 장소</span>
-              <Input
-                value={form.location}
-                onChange={(event) => setForm((current) => ({ ...current, location: event.target.value }))}
-                placeholder="국민대학교 미래관"
-              />
-            </label>
+                <label className="space-y-2">
+                  <span className="text-sm font-semibold text-[#243845]">활동 장소</span>
+                  <Input
+                    value={form.location}
+                    onChange={(event) => setForm((current) => ({ ...current, location: event.target.value }))}
+                    placeholder="국민대학교 미래관"
+                  />
+                </label>
+              </div>
+            </section>
 
-            <label className="space-y-2 sm:col-span-2">
-              <span className="text-sm font-semibold text-[#243845]">활동 설명</span>
-              <Textarea
-                value={form.description}
-                onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
-                className="min-h-[140px]"
-                placeholder="활동의 목적, 진행 방식, 현장 분위기를 설명해 주세요."
-              />
-            </label>
+            <section className="rounded-[24px] border border-[#dbe7ea] bg-white/80 p-4 shadow-[0_12px_30px_rgba(47,74,91,0.05)] sm:p-5">
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold text-[#243845]">스토리 내용</h3>
+                <p className="mt-1 text-xs leading-5 text-[#748690]">
+                  홈의 히스토리 카드와 활동 상세 화면에 표시되는 설명과 참여자 정보를 수정합니다.
+                </p>
+              </div>
 
-            <div className="sm:col-span-2">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="space-y-2 sm:col-span-2">
+                  <span className="text-sm font-semibold text-[#243845]">활동 설명</span>
+                  <Textarea
+                    value={form.description}
+                    onChange={(event) =>
+                      setForm((current) => ({ ...current, description: event.target.value }))
+                    }
+                    className="min-h-[160px]"
+                    placeholder="활동의 목적, 진행 방식, 현장 분위기를 설명해 주세요."
+                  />
+                </label>
+
+                <label className="space-y-2 sm:col-span-2">
+                  <span className="text-sm font-semibold text-[#243845]">참여자 이름</span>
+                  <Textarea
+                    value={form.participantNames}
+                    onChange={(event) =>
+                      setForm((current) => ({ ...current, participantNames: event.target.value }))
+                    }
+                    className="min-h-[132px]"
+                    placeholder={"한 줄에 한 명씩 입력하세요.\n홍길동\n김국민"}
+                  />
+                </label>
+              </div>
+            </section>
+
+            <section className="rounded-[24px] border border-[#dbe7ea] bg-white/80 p-4 shadow-[0_12px_30px_rgba(47,74,91,0.05)] sm:p-5">
               <ImageDropzoneField
                 label="활동 이미지"
-                description="이미지를 드래그해서 놓거나 파일 선택으로 추가하세요. 추가된 이미지는 저장 전에 미리보기로 확인할 수 있습니다."
+                description="히스토리 카드와 상세 화면에 보일 이미지를 추가하세요. 미리보기를 작게 정리해 두어 빠르게 검토할 수 있습니다."
                 items={imageAssets}
+                compact
                 onFilesSelected={(files) => {
                   setImageAssets((current) => [...current, ...createAssetsFromFiles(files)])
                 }}
@@ -234,7 +263,7 @@ export function ActivityEditorDialog({
                   })
                 }}
               />
-            </div>
+            </section>
           </div>
 
           {error ? <p className="mt-4 text-sm text-red-500">{error}</p> : null}

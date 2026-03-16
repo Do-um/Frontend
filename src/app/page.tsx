@@ -5,12 +5,14 @@ import { useEffect, useMemo, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { PencilLine, Plus } from "lucide-react"
 
+import { ActivityEditorDialog } from "@/components/pages/activity-editor-dialog"
 import { ClubContentEditorDialog } from "@/components/pages/club-content-editor-dialog"
 import { ClubProgramEditorDialog } from "@/components/pages/club-program-editor-dialog"
 import { HeaderNav } from "@/components/header-nav"
 import { SiteFooter } from "@/components/site-footer"
 import { Button } from "@/components/ui/button"
 import { useAdminSession } from "@/hooks/use-admin-session"
+import { storeTokens } from "@/lib/auth"
 import {
   fetchActivities,
   fetchClubContent,
@@ -75,6 +77,10 @@ export default function Home() {
     mode: "create" | "edit"
     program: ClubProgramItem | null
   } | null>(null)
+  const [activityEditorState, setActivityEditorState] = useState<{
+    mode: "create" | "edit"
+    activity: ActivityItem | null
+  } | null>(null)
 
   useEffect(() => {
     if (!searchParams) {
@@ -101,10 +107,7 @@ export default function Home() {
     }
 
     try {
-      localStorage.setItem("access_token", token)
-      if (refreshToken) {
-        localStorage.setItem("refresh_token", refreshToken)
-      }
+      storeTokens(token, refreshToken)
       router.replace("/")
     } catch (err) {
       console.error(err)
@@ -161,6 +164,17 @@ export default function Home() {
         (left, right) => left.sortOrder - right.sortOrder || left.id - right.id,
       ),
     )
+  }
+
+  function handleActivitySaved(savedActivity: ActivityItem) {
+    setActivities((current) => {
+      const hasExisting = current.some((activity) => activity.id === savedActivity.id)
+      const nextActivities = hasExisting
+        ? current.map((activity) => (activity.id === savedActivity.id ? savedActivity : activity))
+        : [savedActivity, ...current]
+
+      return nextActivities.sort(compareActivities)
+    })
   }
 
   return (
@@ -271,7 +285,20 @@ export default function Home() {
             </div>
 
             <div>
-              <h3 className="mb-8 text-lg font-bold text-gray-900">{clubContent.historySectionTitle}</h3>
+              <div className="mb-8 flex items-center justify-between gap-4">
+                <h3 className="text-lg font-bold text-gray-900">{clubContent.historySectionTitle}</h3>
+                {isAdmin ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setActivityEditorState({ mode: "create", activity: null })}
+                    className="rounded-full border-[#d7e5ee] bg-white/80 px-4 text-[#355264] hover:bg-white"
+                  >
+                    <Plus className="size-4" />
+                    히스토리 추가
+                  </Button>
+                ) : null}
+              </div>
 
               <div className="space-y-10">
                 {displayedActivities.map((activity, index) => (
@@ -293,7 +320,19 @@ export default function Home() {
                     </div>
 
                     <div className="flex min-h-[160px] flex-col justify-center">
-                      <p className="text-sm font-semibold text-gray-900">{activity.activityId}</p>
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="text-sm font-semibold text-gray-900">{activity.activityId}</p>
+                        {isAdmin ? (
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => setActivityEditorState({ mode: "edit", activity })}
+                            className="rounded-full text-[#355264] hover:bg-white/70"
+                          >
+                            <PencilLine className="size-4" />
+                          </Button>
+                        ) : null}
+                      </div>
                       <p className="mt-2 max-w-xl text-sm leading-6 text-gray-600">{activity.description}</p>
                     </div>
                   </div>
@@ -360,6 +399,18 @@ export default function Home() {
           }
         }}
         onSaved={handleProgramSaved}
+      />
+
+      <ActivityEditorDialog
+        open={Boolean(activityEditorState)}
+        mode={activityEditorState?.mode ?? "create"}
+        activity={activityEditorState?.activity}
+        onOpenChange={(open) => {
+          if (!open) {
+            setActivityEditorState(null)
+          }
+        }}
+        onSaved={handleActivitySaved}
       />
     </div>
   )
