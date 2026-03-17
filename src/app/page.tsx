@@ -344,7 +344,7 @@ export default function Home() {
       </section>
 
       <section className="px-4 py-12 lg:px-8">
-        <div className="mx-auto max-w-6xl rounded-[28px] bg-white/80 px-6 py-10 shadow-xl backdrop-blur-sm">
+        <div className="mx-auto max-w-6xl px-6 py-10">
           <div className="mb-4 ml-2">
             <p className="text-sm text-gray-600">{clubContent.studyCaption}</p>
             <p className="text-lg font-bold text-gray-900">{clubContent.studyTitle}</p>

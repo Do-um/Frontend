@@ -6,7 +6,7 @@ export function StudyLandingPage() {
       mode="study"
       archiveLabel="Study Archive"
       heroTitle="Our Study"
-      heroDescription="함께 배우고 함께 성장한 스터디 기록"
+      heroDescription="Learning together Growing together"
       sectionEyebrow="DO,UM STUDYBOARD"
       sectionTitle="스터디 기록"
       emptyTitle="등록된 스터디가 없습니다."

@@ -571,7 +571,7 @@ export default function RentalPage() {
 
       <main className="mx-auto max-w-6xl px-6 pb-20 pt-12 sm:pt-16">
         <section className="mb-14 flex flex-col items-center text-center">
-          <div className="relative flex h-28 w-28 items-center justify-center rounded-full bg-white/70 shadow-[0_18px_50px_rgba(65,106,133,0.12)] backdrop-blur-sm">
+          <div className="animate-float relative flex h-28 w-28 items-center justify-center rounded-full bg-white/70 shadow-[0_18px_50px_rgba(65,106,133,0.12)] backdrop-blur-sm">
             <Image src="/doum-logo-large.png" alt="DO,UM 로고" width={62} height={88} priority />
           </div>
           <p className="mt-8 inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#6a7d88]">

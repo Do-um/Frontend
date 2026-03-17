@@ -53,7 +53,7 @@ export function HeaderNav() {
 
   return (
     // 전체 페이지 상단에 고정해서 재사용하는 헤더 영역
-    <header className="relative z-40 w-full border-b border-black/8 bg-[#f7faf7]/94 px-6 py-3 backdrop-blur-md sm:px-8">
+    <header className="relative z-40 w-full border-b border-black/8 bg-transparent px-6 py-3 backdrop-blur-md sm:px-8">
       <div className="mx-auto flex max-w-[1400px] items-center justify-between">
         {/* 로고 */}
         <Link href="/" className="flex h-11 w-11 items-center justify-center transition-opacity hover:opacity-80 sm:h-12 sm:w-12">

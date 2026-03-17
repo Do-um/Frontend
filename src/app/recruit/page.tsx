@@ -115,18 +115,20 @@ export default function RecruitPage() {
       <section className="relative overflow-hidden py-16">
         <div className="mx-auto max-w-4xl px-4">
           <div className="flex items-center justify-center" style={{ minHeight: "350px" }}>
-            <div
-              className="transition-transform duration-100 ease-out"
-              style={{ transform: `translate(${logoOffset.x}px, ${logoOffset.y}px)` }}
-            >
-              <Image
-                src="/doum-logo-large.png"
-                alt="DO,UM"
-                width={500}
-                height={350}
-                priority
-                className="select-none"
-              />
+            <div className="animate-float">
+              <div
+                className="transition-transform duration-100 ease-out"
+                style={{ transform: `translate(${logoOffset.x}px, ${logoOffset.y}px)` }}
+              >
+                <Image
+                  src="/doum-logo-large.png"
+                  alt="DO,UM"
+                  width={500}
+                  height={350}
+                  priority
+                  className="select-none"
+                />
+              </div>
             </div>
           </div>
         </div>

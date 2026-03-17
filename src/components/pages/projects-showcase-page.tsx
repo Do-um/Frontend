@@ -272,13 +272,13 @@ export function ProjectsShowcasePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#eef2ec] text-[#1f2730]">
-      <div
-        className="relative overflow-hidden bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url('/home-bg.png')" }}
-      >
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.76),_rgba(238,242,236,0.95)_62%)]" />
-        <div className="pointer-events-none absolute -left-20 top-32 h-96 w-96 rounded-full bg-[#daeef8]/45 blur-3xl" />
+    <div
+      className="min-h-screen bg-cover bg-center bg-no-repeat bg-fixed text-[#1f2730]"
+      style={{ backgroundImage: "url('/home-bg.png')" }}
+    >
+      <div className="relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 bg-white/8" />
+        <div className="pointer-events-none absolute -left-20 top-32 h-96 w-96 rounded-full bg-[#daeef8]/20 blur-3xl" />
         <div className="pointer-events-none absolute right-[-8rem] top-16 h-[32rem] w-[32rem] rounded-full border border-white/40" />
         <div className="pointer-events-none absolute right-[-4rem] top-28 h-[26rem] w-[26rem] rounded-full border border-white/25" />
 
@@ -287,7 +287,7 @@ export function ProjectsShowcasePage() {
 
           <main className="mx-auto max-w-6xl px-6 pb-20 pt-12 sm:pt-16">
             <section className="mx-auto max-w-3xl text-center">
-              <div className="mx-auto flex h-28 w-28 items-center justify-center rounded-full bg-white/72 shadow-[0_18px_50px_rgba(65,106,133,0.12)] backdrop-blur-sm">
+              <div className="animate-float mx-auto flex h-28 w-28 items-center justify-center rounded-full bg-white/72 shadow-[0_18px_50px_rgba(65,106,133,0.12)] backdrop-blur-sm">
                 <Image src="/doum-logo-large.png" alt="DO,UM 로고" width={62} height={88} priority />
               </div>
               <p className="mt-8 inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/80 px-4 py-2 text-xs font-semibold tracking-[0.22em] text-[#6a7d88] uppercase">
@@ -296,7 +296,7 @@ export function ProjectsShowcasePage() {
               </p>
               <h1 className="mt-6 text-4xl font-black tracking-tight text-black sm:text-5xl">Our Projects</h1>
               <p className="mt-4 text-base leading-7 text-[#677680] sm:text-lg">
-                봉사 현장에서 쌓인 문제의식을 프로젝트로 확장하고, 다시 교육 현장으로 연결합니다.
+                Turning real-world challenges into projects—and bringing them back to education.
               </p>
             </section>
 

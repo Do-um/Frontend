@@ -232,7 +232,7 @@ export function ActivitiesLandingPage({
   mode = "all",
   archiveLabel = "Activity Archive",
   heroTitle = "Our Activity",
-  heroDescription = "우리가 해온 길, 우리가 가는 길",
+  heroDescription = "What we’ve done, what’s next",
   sectionEyebrow = "DO,UM STORYBOARD",
   sectionTitle = "활동 기록",
   emptyTitle = "등록된 활동이 없습니다.",
@@ -305,7 +305,6 @@ export function ActivitiesLandingPage({
   const selectedActivityTarget = selectedActivity ? inferActivityLink(selectedActivity.activityId) : null
   const selectedImages = selectedActivity?.activityImages ?? []
   const activeImage = selectedImages[activeImageIndex] ?? selectedImages[0]
-
   function openActivityDetail(activity: ActivityItem) {
     setSelectedActivity(activity)
     setActiveImageIndex(0)
@@ -324,22 +323,22 @@ export function ActivitiesLandingPage({
   }
 
   return (
-    <div className="min-h-screen bg-[#eef2ec] text-[#1f2730]">
-      <div
-        className="relative overflow-hidden bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url('/home-bg.png')" }}
-      >
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.72),_rgba(238,242,236,0.94)_60%)]" />
+    <div
+      className="min-h-screen bg-cover bg-center bg-no-repeat bg-fixed text-[#1f2730]"
+      style={{ backgroundImage: "url('/home-bg.png')" }}
+    >
+      <div className="relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 bg-white/8" />
         <div className="pointer-events-none absolute -right-32 top-24 h-96 w-96 rounded-full border border-white/50" />
         <div className="pointer-events-none absolute -right-24 top-36 h-[30rem] w-[30rem] rounded-full border border-white/35" />
-        <div className="pointer-events-none absolute -left-24 top-[28rem] h-80 w-80 rounded-full bg-[#d9edf4]/40 blur-3xl" />
+        <div className="pointer-events-none absolute -left-24 top-[28rem] h-80 w-80 rounded-full bg-[#d9edf4]/20 blur-3xl" />
 
         <div className="relative">
           <HeaderNav />
 
           <main className="mx-auto max-w-6xl px-6 pb-20 pt-12 sm:pt-16">
             <section className="flex flex-col items-center text-center">
-              <div className="relative flex h-28 w-28 items-center justify-center rounded-full bg-white/70 shadow-[0_18px_50px_rgba(65,106,133,0.12)] backdrop-blur-sm">
+              <div className="animate-float relative flex h-28 w-28 items-center justify-center rounded-full bg-white/70 shadow-[0_18px_50px_rgba(65,106,133,0.12)] backdrop-blur-sm">
                 <Image src="/doum-logo-large.png" alt="DO,UM 로고" width={62} height={88} priority />
               </div>
               <p className="mt-8 inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/80 px-4 py-2 text-xs font-semibold tracking-[0.22em] text-[#6a7d88] uppercase">
