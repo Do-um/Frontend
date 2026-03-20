@@ -1207,8 +1207,8 @@ export default function RentalPage() {
       <footer className="border-t border-gray-300 bg-transparent py-10">
         <div className="mx-auto max-w-4xl px-4 text-center">
           <p className="mb-2 text-base font-bold text-gray-900">DO,UM</p>
-          <p className="mb-1 text-xs text-gray-600">소프트웨어융합대학 코딩봉사 동아리</p>
-          <p className="mb-4 text-xs text-gray-600">Contact: doum@kookmin.ac.kr</p>
+          <p className="mb-1 text-xs text-gray-600">소프트웨어융합대학 SW봉사 동아리</p>
+          <p className="mb-4 text-xs text-gray-600">Contact: doum2018@kookmin.ac.kr</p>
           <p className="text-xs text-gray-500">© DO,UM</p>
         </div>
       </footer>
