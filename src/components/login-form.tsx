@@ -13,7 +13,6 @@ import { HeaderNav } from "@/components/header-nav"
 import { buildApiUrl } from "@/lib/api"
 
 export function LoginForm() {
-  const redirectUri = process.env.NEXT_PUBLIC_OAUTH_REDIRECT_URI
   const searchParams = useSearchParams()
   const error = searchParams.get("error")
   const allowedDomain = searchParams.get("allowedDomain") || "@kookmin.ac.kr"
@@ -28,11 +27,7 @@ export function LoginForm() {
   const handleGoogleLogin = () => {
     try {
       const url = buildApiUrl("/oauth2/authorization/google")
-      const target = new URL(url)
-      if (redirectUri) {
-        target.searchParams.set("redirect_uri", redirectUri)
-      }
-      window.location.href = target.toString()
+      window.location.href = url
     } catch (err) {
       console.error(err)
       alert("API 서버 주소가 설정되지 않았습니다.")

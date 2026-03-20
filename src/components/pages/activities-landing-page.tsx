@@ -92,10 +92,6 @@ function inferActivityLink(activityId: string) {
   if (normalized.includes("스터디") || normalized.includes("study")) {
     return { href: "/activities/study", label: "스터디" }
   }
-  if (normalized.includes("모각코")) {
-    return { href: "/activities/mogakko", label: "모각코" }
-  }
-
   return { href: "/activities", label: "주요활동" }
 }
 
