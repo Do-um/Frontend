@@ -10,7 +10,8 @@
 
 ## Optional
 - `NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET`
-  - Required only when admins upload images from the frontend.
+  - Defaults to `images`.
+  - Change it only if you want a different Storage bucket name.
 - `NEXT_PUBLIC_ALLOWED_LOGIN_DOMAIN`
   - Defaults to `kookmin.ac.kr`.
 - `NEXT_PUBLIC_ADMIN_EMAILS`
@@ -24,4 +25,5 @@
 - Public reads and authenticated writes depend on Supabase Auth/DB/Storage policies being configured on the project.
 - Run `docs/supabase-schema.sql` first if the Supabase project does not already have the tables/columns from this app.
 - Run `docs/supabase-rls.sql` once in the Supabase SQL Editor after creating or migrating the tables.
+- Storage image upload assumes a public bucket named `images` unless `NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET` is overridden.
 - The SQL file assumes the allowed login domain is `@kookmin.ac.kr`. Change that function if your production policy differs.

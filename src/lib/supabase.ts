@@ -3,7 +3,8 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js"
 const rawSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
 const rawSupabaseAnonKey =
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || ""
-const rawSupabaseStorageBucket = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET || ""
+const DEFAULT_SUPABASE_STORAGE_BUCKET = "images"
+const rawSupabaseStorageBucket = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET || DEFAULT_SUPABASE_STORAGE_BUCKET
 
 let browserClient: SupabaseClient | null = null
 
@@ -16,7 +17,7 @@ export function getSupabaseAnonKey() {
 }
 
 export function getSupabaseStorageBucket() {
-  return rawSupabaseStorageBucket.trim()
+  return rawSupabaseStorageBucket.trim() || DEFAULT_SUPABASE_STORAGE_BUCKET
 }
 
 export function hasSupabaseEnv() {

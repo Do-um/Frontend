@@ -451,6 +451,14 @@ function formatSupabaseErrorMessage(error: { message: string } | null, fallbackM
     return `${fallbackMessage} Supabase 테이블 권한 또는 RLS 정책을 확인해 주세요. Frontend/docs/supabase-rls.sql 기준으로 설정이 필요합니다.`
   }
 
+  if (normalizedMessage.includes("bucket") && normalizedMessage.includes("not found")) {
+    return `${fallbackMessage} Supabase Storage 버킷 \`images\`가 없거나 아직 생성되지 않았습니다.`
+  }
+
+  if (normalizedMessage.includes("storage") && normalizedMessage.includes("policy")) {
+    return `${fallbackMessage} Supabase Storage 정책을 확인해 주세요. \`Frontend/supabase/migrations/20260320133200_frontend_storage.sql\` 또는 \`Frontend/docs/supabase-rls.sql\` 하단 예시가 필요합니다.`
+  }
+
   return message
 }
 
@@ -1030,10 +1038,6 @@ export async function createActivity(payload: ActivityWritePayload, _token = get
 export async function uploadImageFiles(files: File[], _token = getStoredAccessToken()) {
   await requireAdminUser()
   const bucket = getSupabaseStorageBucket()
-
-  if (!bucket) {
-    throw new Error("NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET 설정이 필요합니다.")
-  }
 
   const optimizedFiles = await compressImagesForUpload(files)
   const uploadedPaths: string[] = []

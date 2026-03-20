@@ -254,23 +254,20 @@ $$;
 commit;
 
 -- Optional storage policies
--- Replace your-bucket-name with NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET when you enable frontend image upload.
+-- The frontend defaults to the public bucket name `images`.
 --
 -- insert into storage.buckets (id, name, public)
--- values ('your-bucket-name', 'your-bucket-name', true)
+-- values ('images', 'images', true)
 -- on conflict (id) do nothing;
 --
 -- create policy "public read storage"
 -- on storage.objects
 -- for select
 -- to anon, authenticated
--- using (bucket_id = 'your-bucket-name');
+-- using (bucket_id = 'images');
 --
--- create policy "admin upload storage"
+-- create policy "authenticated upload storage"
 -- on storage.objects
 -- for insert
 -- to authenticated
--- with check (
---   bucket_id = 'your-bucket-name'
---   and public.is_admin()
--- );
+-- with check (bucket_id = 'images');
