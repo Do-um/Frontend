@@ -1,7 +1,5 @@
 begin;
 
--- Run Frontend/docs/supabase-schema.sql first.
-
 create or replace function public.current_user_email()
 returns text
 language sql
@@ -76,20 +74,31 @@ begin
 end;
 $$;
 
-drop trigger if exists trg_users_prevent_non_admin_user_role_change on public.users;
-create trigger trg_users_prevent_non_admin_user_role_change
-before update on public.users
-for each row
-execute function public.prevent_non_admin_user_role_change();
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.tables
+    where table_schema = 'public'
+      and table_name = 'users'
+  ) then
+    drop trigger if exists trg_users_prevent_non_admin_user_role_change on public.users;
+    create trigger trg_users_prevent_non_admin_user_role_change
+    before update on public.users
+    for each row
+    execute function public.prevent_non_admin_user_role_change();
+  end if;
+end
+$$;
 
 grant usage on schema public to anon, authenticated;
 grant usage, select on all sequences in schema public to authenticated;
 
 do $$
 declare
-  table_name text;
+  target_table text;
 begin
-  foreach table_name in array array[
+  foreach target_table in array array[
     'introduce',
     'introduce_activity_image',
     'projects',
@@ -107,24 +116,24 @@ begin
       select 1
       from information_schema.tables as t
       where t.table_schema = 'public'
-        and t.table_name = table_name
+        and t.table_name = target_table
     ) then
-      execute format('grant select on table public.%I to anon, authenticated', table_name);
-      execute format('grant insert, update, delete on table public.%I to authenticated', table_name);
-      execute format('alter table public.%I enable row level security', table_name);
+      execute format('grant select on table public.%I to anon, authenticated', target_table);
+      execute format('grant insert, update, delete on table public.%I to authenticated', target_table);
+      execute format('alter table public.%I enable row level security', target_table);
 
-      execute format('drop policy if exists %I on public.%I', table_name || ' public read', table_name);
+      execute format('drop policy if exists %I on public.%I', target_table || ' public read', target_table);
       execute format(
         'create policy %I on public.%I for select to anon, authenticated using (true)',
-        table_name || ' public read',
-        table_name
+        target_table || ' public read',
+        target_table
       );
 
-      execute format('drop policy if exists %I on public.%I', table_name || ' admin write', table_name);
+      execute format('drop policy if exists %I on public.%I', target_table || ' admin write', target_table);
       execute format(
         'create policy %I on public.%I for all to authenticated using (public.is_admin()) with check (public.is_admin())',
-        table_name || ' admin write',
-        table_name
+        target_table || ' admin write',
+        target_table
       );
     end if;
   end loop;
@@ -252,25 +261,3 @@ end
 $$;
 
 commit;
-
--- Optional storage policies
--- Replace your-bucket-name with NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET when you enable frontend image upload.
---
--- insert into storage.buckets (id, name, public)
--- values ('your-bucket-name', 'your-bucket-name', true)
--- on conflict (id) do nothing;
---
--- create policy "public read storage"
--- on storage.objects
--- for select
--- to anon, authenticated
--- using (bucket_id = 'your-bucket-name');
---
--- create policy "admin upload storage"
--- on storage.objects
--- for insert
--- to authenticated
--- with check (
---   bucket_id = 'your-bucket-name'
---   and public.is_admin()
--- );

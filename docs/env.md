@@ -22,5 +22,6 @@
 - The OAuth callback route is implemented at `src/app/auth/callback/page.tsx`.
 - Login button starts Supabase Google OAuth directly.
 - Public reads and authenticated writes depend on Supabase Auth/DB/Storage policies being configured on the project.
+- Run `docs/supabase-schema.sql` first if the Supabase project does not already have the tables/columns from this app.
 - Run `docs/supabase-rls.sql` once in the Supabase SQL Editor after creating or migrating the tables.
 - The SQL file assumes the allowed login domain is `@kookmin.ac.kr`. Change that function if your production policy differs.

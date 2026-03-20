@@ -353,6 +353,37 @@ export async function restoreSupabaseSession() {
   return data.session
 }
 
+export async function exchangeCodeForSessionIfPresent(code: string | null) {
+  if (!hasSupabaseEnv()) {
+    return null
+  }
+
+  const client = getSupabaseBrowserClient()
+  const { data: existingSessionData, error: existingSessionError } = await client.auth.getSession()
+
+  if (existingSessionError) {
+    throw new Error(existingSessionError.message)
+  }
+
+  if (existingSessionData.session) {
+    updateStoredTokens(existingSessionData.session)
+    return existingSessionData.session
+  }
+
+  if (!code) {
+    return null
+  }
+
+  const { data, error } = await client.auth.exchangeCodeForSession(code)
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  updateStoredTokens(data.session)
+  return data.session
+}
+
 export async function fetchCurrentUser() {
   const session = await restoreSupabaseSession()
 
