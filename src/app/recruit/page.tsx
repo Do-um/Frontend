@@ -35,7 +35,7 @@ const defaultRecruitContent: RecruitContent = {
 }
 
 export default function RecruitPage() {
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
+  const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null)
   const [recruitContent, setRecruitContent] = useState<RecruitContent>(defaultRecruitContent)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
@@ -82,7 +82,7 @@ export default function RecruitPage() {
   }, [])
 
   const calculateLogoOffset = () => {
-    if (typeof window === "undefined") {
+    if (typeof window === "undefined" || mousePosition === null) {
       return { x: 0, y: 0 }
     }
 
