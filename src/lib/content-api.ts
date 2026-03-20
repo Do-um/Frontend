@@ -439,9 +439,24 @@ function getSupabase() {
   return getSupabaseBrowserClient()
 }
 
+function formatSupabaseErrorMessage(error: { message: string } | null, fallbackMessage: string) {
+  const message = error?.message?.trim()
+
+  if (!message) {
+    return fallbackMessage
+  }
+
+  const normalizedMessage = message.toLowerCase()
+  if (normalizedMessage.includes("permission denied") || normalizedMessage.includes("row-level security")) {
+    return `${fallbackMessage} Supabase 테이블 권한 또는 RLS 정책을 확인해 주세요. Frontend/docs/supabase-rls.sql 기준으로 설정이 필요합니다.`
+  }
+
+  return message
+}
+
 function throwIfError(error: { message: string } | null, fallbackMessage: string): asserts error is null {
   if (error) {
-    throw new Error(error.message || fallbackMessage)
+    throw new Error(formatSupabaseErrorMessage(error, fallbackMessage))
   }
 }
 
@@ -957,6 +972,8 @@ export async function fetchMyRentalHistory(_token = getStoredAccessToken()) {
 }
 
 export async function fetchRentalSchedule(itemId: number) {
+  await requireRentalUser()
+
   const { data, error } = await getSupabase()
     .from("rentals")
     .select("id, rental_item_id, user_id, quantity, start_date, end_date, purpose, status, rented_at, returned_at")
@@ -968,20 +985,13 @@ export async function fetchRentalSchedule(itemId: number) {
   throwIfError(error, "예약 일정을 불러오지 못했습니다.")
 
   const rentals = ((data as RentalRow[]) ?? []).filter(isActiveRental)
-  const userIds = Array.from(new Set(rentals.map((rental) => Number(rental.user_id)).filter((userId) => Number.isFinite(userId))))
-  const usersResult = userIds.length ? await getSupabase().from("users").select("id, name").in("id", userIds) : { data: [], error: null }
-
-  throwIfError(usersResult.error, "예약자 정보를 불러오지 못했습니다.")
-
-  const userNameById = new Map((((usersResult.data as Array<{ id: number; name: string }>) ?? [])).map((user) => [user.id, user.name]))
-
   return rentals.map((rental) => ({
     rentalId: rental.id,
     quantity: rental.quantity,
     startDate: rental.start_date,
     endDate: rental.end_date,
     purpose: rental.purpose,
-    reservedByName: userNameById.get(Number(rental.user_id)) ?? null,
+    reservedByName: null,
   }))
 }
 

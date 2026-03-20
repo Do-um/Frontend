@@ -360,6 +360,13 @@ export default function RentalPage() {
   }
 
   async function loadRentalSchedule(itemId: number) {
+    if (!isLoggedIn || !canUseRentalActions) {
+      setScheduleEntries([])
+      setScheduleError("")
+      setLoadingSchedule(false)
+      return
+    }
+
     setLoadingSchedule(true)
     setScheduleError("")
 
@@ -412,6 +419,7 @@ export default function RentalPage() {
     setPurposeInput("")
     setActionError("")
     setScheduleError("")
+    setScheduleEntries([])
     void loadRentalSchedule(itemId)
   }
 
@@ -444,7 +452,7 @@ export default function RentalPage() {
     await Promise.all([
       loadItems(),
       isLoggedIn && canUseRentalActions ? loadRentalHistory() : Promise.resolve(),
-      selectedItemId ? loadRentalSchedule(selectedItemId) : Promise.resolve(),
+      selectedItemId && isLoggedIn && canUseRentalActions ? loadRentalSchedule(selectedItemId) : Promise.resolve(),
     ])
   }
 
@@ -580,7 +588,7 @@ export default function RentalPage() {
           </p>
           <h1 className="mt-6 text-4xl font-black tracking-tight text-black sm:text-5xl">물품 대여</h1>
           <p className="mt-4 max-w-3xl text-base text-[#677680] sm:text-lg">
-            물품 목록과 상세 조회는 누구나 가능하며, 실제 대여는 달력에서 기간을 선택하고 사유를 입력해야 신청할 수 있습니다.
+            물품 목록과 상세 조회는 누구나 가능하고, 예약 일정과 실제 대여는 로그인된 두음 회원 및 관리자 기준으로 제공합니다.
           </p>
         </section>
 
@@ -846,8 +854,13 @@ export default function RentalPage() {
 
                 <div className="mt-5 rounded-3xl bg-white p-4 shadow-[0_16px_40px_rgba(47,74,91,0.06)]">
                   <p className="text-sm font-semibold text-gray-800">현재 예약 일정</p>
-                  {scheduleError ? <p className="mt-3 text-sm text-red-500">{scheduleError}</p> : null}
-                  {loadingSchedule ? (
+                  {!isLoggedIn ? (
+                    <p className="mt-3 text-sm text-gray-500">로그인 후 예약 일정을 확인할 수 있습니다.</p>
+                  ) : !canUseRentalActions ? (
+                    <p className="mt-3 text-sm text-gray-500">현재 계정은 조회 전용입니다. 어드민 및 두음 회원만 예약 일정을 확인할 수 있습니다.</p>
+                  ) : scheduleError ? (
+                    <p className="mt-3 text-sm text-red-500">{scheduleError}</p>
+                  ) : loadingSchedule ? (
                     <p className="mt-3 text-sm text-gray-500">예약 일정을 불러오는 중입니다...</p>
                   ) : scheduleEntries.length ? (
                     <ul className="mt-3 space-y-2 text-sm text-gray-600">
@@ -859,9 +872,7 @@ export default function RentalPage() {
                           <p className="text-sm font-medium text-gray-700">
                             {formatDateRange(entry.startDate, entry.endDate)} · {entry.quantity}개 예약
                           </p>
-                          <p className="mt-1 text-sm font-medium text-[#355264]">
-                            {entry.reservedByName ? `예약자 ${entry.reservedByName}` : "예약자 정보 없음"}
-                          </p>
+                          {entry.reservedByName ? <p className="mt-1 text-sm font-medium text-[#355264]">예약자 {entry.reservedByName}</p> : null}
                           <p className="mt-1 text-sm text-gray-500">{entry.purpose || "사유 미입력"}</p>
                         </li>
                       ))}
