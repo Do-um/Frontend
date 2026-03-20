@@ -58,6 +58,11 @@ function parseEmailList(rawValue: string | undefined) {
     .filter(Boolean)
 }
 
+function isAuthSessionMissingError(error: { message?: string } | null | undefined) {
+  const message = error?.message?.trim().toLowerCase()
+  return message === "auth session missing!"
+}
+
 function getPrimaryEmail(authUser: SupabaseAuthUser) {
   const email = authUser.email?.trim().toLowerCase()
 
@@ -249,6 +254,10 @@ export async function getServerAuthenticatedUser() {
   } = await supabase.auth.getUser()
 
   if (authError) {
+    if (isAuthSessionMissingError(authError)) {
+      return null
+    }
+
     throw new Error(authError.message)
   }
 
