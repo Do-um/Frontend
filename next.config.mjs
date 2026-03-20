@@ -1,5 +1,9 @@
+import path from "path"
+import { fileURLToPath } from "url"
+
 /** @type {import('next').NextConfig} */
 const remotePatterns = []
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 if (process.env.NEXT_PUBLIC_API_BASE_URL) {
   try {
@@ -18,6 +22,7 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  outputFileTracingRoot: __dirname,
   images: {
     unoptimized: true,
     remotePatterns,
