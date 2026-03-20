@@ -120,8 +120,8 @@ export function StaffEditorDialog({
         role: form.role.trim(),
         description: form.description.trim(),
         profileImage: nextProfileImage,
-        githubUrl: form.githubUrl.trim() || null,
-        instagramUrl: form.instagramUrl.trim() || null,
+        githubUrl: form.githubUrl?.trim() || null,
+        instagramUrl: form.instagramUrl?.trim() || null,
       }
 
       const saved =

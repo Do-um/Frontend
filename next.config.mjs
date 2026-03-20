@@ -5,27 +5,52 @@ import { fileURLToPath } from "url"
 const remotePatterns = []
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
   try {
-    const apiUrl = new URL(process.env.NEXT_PUBLIC_API_BASE_URL)
+    const supabaseUrl = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL)
     remotePatterns.push({
-      protocol: apiUrl.protocol.replace(":", ""),
-      hostname: apiUrl.hostname,
-      port: apiUrl.port,
+      protocol: supabaseUrl.protocol.replace(":", ""),
+      hostname: supabaseUrl.hostname,
+      port: supabaseUrl.port,
+      pathname: "/**",
     })
   } catch {
-    // Ignore invalid API base URLs and keep local/public images working.
+    // Ignore invalid Supabase URLs and keep local/public images working.
   }
 }
 
+remotePatterns.push({
+  protocol: "https",
+  hostname: "lh3.googleusercontent.com",
+  pathname: "/**",
+})
+
+const securityHeaders = [
+  { key: "Content-Security-Policy", value: "base-uri 'self'; frame-ancestors 'none'; object-src 'none'" },
+  { key: "X-Frame-Options", value: "DENY" },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+]
+
 const nextConfig = {
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   outputFileTracingRoot: __dirname,
+  reactStrictMode: true,
+  poweredByHeader: false,
+  compress: true,
   images: {
-    unoptimized: true,
     remotePatterns,
+    formats: ["image/avif", "image/webp"],
+  },
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: securityHeaders,
+      },
+    ]
   },
 }
 

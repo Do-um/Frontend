@@ -1,11 +1,12 @@
 "use client"
 
+import dynamic from "next/dynamic"
 import Image from "next/image"
 import { type ComponentProps, useEffect, useMemo, useRef, useState } from "react"
 import { PencilLine, Plus, Search, Sparkles, Trash2, X } from "lucide-react"
+import type { DateRange } from "react-day-picker"
 
 import { HeaderNav } from "@/components/header-nav"
-import { RentalItemEditorDialog } from "@/components/pages/rental-item-editor-dialog"
 import { Calendar, CalendarDayButton } from "@/components/ui/calendar"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -26,6 +27,11 @@ import {
 import { resolveMediaUrl } from "@/lib/media"
 import { hasSupabaseEnv } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
+
+const RentalItemEditorDialog = dynamic(
+  () => import("@/components/pages/rental-item-editor-dialog").then((module) => module.RentalItemEditorDialog),
+  { ssr: false },
+)
 
 function formatDateTime(value?: string | null) {
   if (!value) {
@@ -175,7 +181,7 @@ export default function RentalPage() {
   const [rentalHistory, setRentalHistory] = useState<UserRentalHistoryItem[]>([])
   const [scheduleEntries, setScheduleEntries] = useState<RentalScheduleEntry[]>([])
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null)
-  const [range, setRange] = useState<{ from?: Date; to?: Date }>({})
+  const [range, setRange] = useState<DateRange | undefined>(undefined)
   const [quantityInput, setQuantityInput] = useState("1")
   const [purposeInput, setPurposeInput] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
@@ -310,13 +316,16 @@ export default function RentalPage() {
   }, [bookedDateCounts, selectedItem])
 
   const availableQuantityForRange = useMemo(() => {
-    if (!selectedItem || !range.from || !range.to) {
+    const from = range?.from
+    const to = range?.to
+
+    if (!selectedItem || !from || !to) {
       return 0
     }
 
     let minAvailable = selectedItem.totalQuantity
-    let cursor = startOfDay(range.from)
-    const endDate = startOfDay(range.to)
+    let cursor = startOfDay(from)
+    const endDate = startOfDay(to)
 
     while (cursor <= endDate) {
       const key = toDateKey(cursor)
@@ -326,7 +335,7 @@ export default function RentalPage() {
     }
 
     return Math.max(minAvailable, 0)
-  }, [bookedDateCounts, range.from, range.to, selectedItem])
+  }, [bookedDateCounts, range?.from, range?.to, selectedItem])
 
   async function loadItems() {
     setLoadingItems(true)
@@ -414,7 +423,7 @@ export default function RentalPage() {
 
   function handleOpen(itemId: number) {
     setSelectedItemId(itemId)
-    setRange({})
+    setRange(undefined)
     setQuantityInput("1")
     setPurposeInput("")
     setActionError("")
@@ -425,7 +434,7 @@ export default function RentalPage() {
 
   function handleClose() {
     setSelectedItemId(null)
-    setRange({})
+    setRange(undefined)
     setQuantityInput("1")
     setPurposeInput("")
     setActionError("")
@@ -471,7 +480,10 @@ export default function RentalPage() {
       return
     }
 
-    if (!range.from || !range.to) {
+    const selectedFrom = range?.from
+    const selectedTo = range?.to
+
+    if (!selectedFrom || !selectedTo) {
       setActionError("대여 기간을 달력에서 선택해 주세요.")
       return
     }
@@ -487,7 +499,7 @@ export default function RentalPage() {
       return
     }
 
-    const selectedDayCount = getDayCount(range.from, range.to)
+    const selectedDayCount = getDayCount(selectedFrom, selectedTo)
     if (selectedDayCount > selectedItem.maxRentalDays) {
       setActionError(`최대 대여 기간은 ${selectedItem.maxRentalDays}일입니다.`)
       return
@@ -505,12 +517,12 @@ export default function RentalPage() {
       await createRental({
         itemId: selectedItem.itemId,
         quantity,
-        startDate: toApiDate(range.from),
-        endDate: toApiDate(range.to),
+        startDate: toApiDate(selectedFrom),
+        endDate: toApiDate(selectedTo),
         purpose: purposeInput.trim(),
       })
 
-      setRange({})
+      setRange(undefined)
       setQuantityInput("1")
       setPurposeInput("")
       await refreshAfterMutation()
@@ -806,7 +818,7 @@ export default function RentalPage() {
                       mode="range"
                       selected={range}
                       onSelect={(nextRange) => {
-                        setRange(nextRange ?? {})
+                        setRange(nextRange)
                         setActionError("")
                       }}
                       disabled={(date) =>
@@ -912,7 +924,7 @@ export default function RentalPage() {
                     />
                     <div className="rounded-2xl bg-[#f7fafc] px-4 py-3 text-xs text-gray-600">
                       선택한 기간:{" "}
-                      {range.from && range.to
+                      {range?.from && range?.to
                         ? `${formatDate(toApiDate(range.from))} ~ ${formatDate(toApiDate(range.to))}`
                         : "기간을 선택해 주세요."}
                     </div>
@@ -1018,203 +1030,6 @@ export default function RentalPage() {
           )}
         </section>
       </main>
-
-      {false ? (
-        <DialogContent className="max-h-[92vh] !w-[min(1120px,calc(100vw-1rem))] !max-w-[1120px] overflow-hidden rounded-3xl bg-[#f9f6f1] p-0">
-          {selectedItem ? (
-            <div className="grid max-h-[92vh] grid-cols-1 overflow-hidden lg:grid-cols-[1.3fr_0.9fr]">
-              <div className="overflow-y-auto border-b border-[#e8ecef] bg-[#f3f6f8] p-5 lg:border-b-0 lg:border-r lg:p-6">
-                <DialogHeader className="text-left">
-                  <DialogTitle className="text-2xl font-bold text-gray-900">{selectedItem.name}</DialogTitle>
-                </DialogHeader>
-
-                <div className="mt-4 overflow-hidden rounded-3xl bg-white shadow-[0_16px_40px_rgba(47,74,91,0.08)]">
-                  <div className="relative h-52 w-full bg-[#e9eef1]">
-                    <Image
-                      src={resolveMediaUrl(selectedItem.itemImage) || "/placeholder.svg"}
-                      alt={selectedItem.name}
-                      fill
-                      className="object-cover"
-                      sizes="(min-width: 1024px) 540px, 100vw"
-                    />
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2 px-5 py-4 text-xs text-gray-600">
-                    <span className="rounded-full bg-[#f1f6f9] px-3 py-1.5">{selectedItem.category}</span>
-                    <span className="rounded-full bg-[#f1f6f9] px-3 py-1.5">총 {selectedItem.totalQuantity}개</span>
-                    <span className="rounded-full bg-[#f1f6f9] px-3 py-1.5">최대 {selectedItem.maxRentalDays}일</span>
-                  </div>
-                </div>
-
-                <div className="mt-5 rounded-3xl bg-white p-4 shadow-[0_16px_40px_rgba(47,74,91,0.08)]">
-                  <p className="text-sm font-semibold text-gray-800">대여 기간 선택</p>
-                  <div className="mt-4 overflow-x-auto">
-                    <Calendar
-                      mode="range"
-                      selected={range}
-                      onSelect={(nextRange) => {
-                        setRange(nextRange ?? {})
-                        setActionError("")
-                      }}
-                      disabled={(date) =>
-                        startOfDay(date) < startOfDay() ||
-                        fullyBookedDates.some((blockedDate) => blockedDate.toDateString() === date.toDateString())
-                      }
-                      modifiers={{
-                        booked: (date) =>
-                          fullyBookedDates.some((blockedDate) => blockedDate.toDateString() === date.toDateString()),
-                      }}
-                      modifiersClassNames={{
-                        booked: "bg-blue-100 text-blue-900 opacity-60",
-                      }}
-                      components={{
-                        DayButton: (props) => {
-                          const dateKey = toDateKey(props.day.date)
-
-                          return (
-                            <RentalScheduleDayButton
-                              {...props}
-                              label={reservationLabelsByDate.get(dateKey)}
-                              tooltip={reservationTooltipsByDate.get(dateKey)}
-                            />
-                          )
-                        },
-                      }}
-                      className="w-full [--cell-size:--spacing(10)]"
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-5 grid gap-4 md:grid-cols-2">
-                  <div className="rounded-3xl bg-white p-4 shadow-[0_16px_40px_rgba(47,74,91,0.06)]">
-                    <p className="text-sm font-semibold text-gray-800">예약 안내</p>
-                    <p className="mt-3 text-sm leading-6 text-gray-600">
-                      선택 기간 동안 재고가 모두 차는 날짜는 달력에서 자동으로 비활성화됩니다.
-                    </p>
-                  </div>
-                  <div className="rounded-3xl bg-white p-4 shadow-[0_16px_40px_rgba(47,74,91,0.06)]">
-                    <p className="text-sm font-semibold text-gray-800">선택 기간 가용 수량</p>
-                    <p className="mt-3 text-2xl font-bold text-[#223541]">{availableQuantityForRange}개</p>
-                    <p className="mt-2 text-xs text-gray-500">최대 대여 기간은 {selectedItem.maxRentalDays}일입니다.</p>
-                  </div>
-                </div>
-
-                <div className="mt-5 rounded-3xl bg-white p-4 shadow-[0_16px_40px_rgba(47,74,91,0.06)]">
-                  <p className="text-sm font-semibold text-gray-800">현재 예약 일정</p>
-                  {scheduleError ? <p className="mt-3 text-sm text-red-500">{scheduleError}</p> : null}
-                  {loadingSchedule ? (
-                    <p className="mt-3 text-sm text-gray-500">예약 일정을 불러오는 중입니다...</p>
-                  ) : scheduleEntries.length ? (
-                    <ul className="mt-3 space-y-2 text-sm text-gray-600">
-                      {scheduleEntries.map((entry) => (
-                        <li
-                          key={entry.rentalId}
-                          className="rounded-2xl border border-[#e3edf2] bg-[#f8fbfd] px-3 py-3"
-                        >
-                          <p className="text-sm font-medium text-gray-700">
-                            {formatDateRange(entry.startDate, entry.endDate)} · {entry.quantity}개 예약
-                          </p>
-                          <p className="mt-1 text-sm font-medium text-[#355264]">
-                            {entry.reservedByName ? `예약자 ${entry.reservedByName}` : "예약자 정보 없음"}
-                          </p>
-                          <p className="mt-1 text-sm text-gray-500">{entry.purpose || "사유 미입력"}</p>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="mt-3 text-sm text-gray-500">현재 예약된 일정이 없습니다.</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="overflow-y-auto p-6">
-                <div className="rounded-3xl bg-white p-5 shadow-[0_16px_40px_rgba(47,74,91,0.06)]">
-                  <p className="text-sm font-semibold text-gray-800">물품 설명</p>
-                  <p className="mt-3 text-sm leading-6 text-gray-600">
-                    {selectedItem.description || "물품 설명이 아직 등록되지 않았습니다."}
-                  </p>
-                </div>
-
-                <div className="mt-5 rounded-3xl bg-white p-5 shadow-[0_16px_40px_rgba(47,74,91,0.06)]">
-                  <p className="text-sm font-semibold text-gray-800">대여 정보 입력</p>
-                  <div className="mt-4 space-y-3">
-                    <Input
-                      type="number"
-                      min={1}
-                      max={selectedItem.totalQuantity}
-                      value={quantityInput}
-                      onChange={(event) => setQuantityInput(event.target.value)}
-                      placeholder="대여 수량"
-                      disabled={!isLoggedIn || !canUseRentalActions || submitting}
-                    />
-                    <Textarea
-                      value={purposeInput}
-                      onChange={(event) => setPurposeInput(event.target.value)}
-                      placeholder="대여 사유를 입력해 주세요."
-                      className="min-h-[120px]"
-                      disabled={!isLoggedIn || !canUseRentalActions || submitting}
-                    />
-                    <div className="rounded-2xl bg-[#f7fafc] px-4 py-3 text-xs text-gray-600">
-                      선택된 기간:{" "}
-                      {range.from && range.to
-                        ? `${formatDate(toApiDate(range.from))} ~ ${formatDate(toApiDate(range.to))}`
-                        : "기간을 선택해 주세요."}
-                    </div>
-                    {!isLoggedIn ? (
-                      <p className="text-xs text-gray-500">로그인 후 대여할 수 있습니다.</p>
-                    ) : !canUseRentalActions ? (
-                      <p className="text-xs text-gray-500">현재 계정은 조회 전용입니다. 어드민 및 두음 회원만 대여할 수 있습니다.</p>
-                    ) : null}
-                    {actionError ? <p className="text-xs text-red-500">{actionError}</p> : null}
-                    <Button
-                      className="w-full"
-                      onClick={handleRent}
-                      disabled={!isLoggedIn || !canUseRentalActions || submitting || getItemStatusMeta(selectedItem).disabled}
-                    >
-                      {submitting ? "처리 중..." : "대여 신청"}
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="mt-5 rounded-3xl bg-white p-5 shadow-[0_16px_40px_rgba(47,74,91,0.06)]">
-                  <p className="text-sm font-semibold text-gray-800">이 물품의 내 대여 내역</p>
-                  {!isLoggedIn ? (
-                    <p className="mt-3 text-sm text-gray-500">로그인 후 확인할 수 있습니다.</p>
-                  ) : !canUseRentalActions ? (
-                    <p className="mt-3 text-sm text-gray-500">현재 계정은 조회 전용입니다.</p>
-                  ) : selectedItemRentals.length ? (
-                    <div className="mt-3 space-y-2">
-                      {selectedItemRentals.map((rental) => (
-                        <div
-                          key={rental.rentalId}
-                          className="rounded-2xl border border-[#e3edf2] bg-[#f8fbfd] px-4 py-4"
-                        >
-                          <p className="text-sm font-semibold text-gray-800">
-                            {formatDateRange(rental.startDate, rental.endDate)} · {rental.quantity}개
-                          </p>
-                          <p className="mt-2 text-sm text-gray-600">{rental.purpose || "사유 미입력"}</p>
-                          <p className="mt-1 text-xs text-gray-500">신청 시각 {formatDateTime(rental.rentedAt)}</p>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleReturn(rental.rentalId)}
-                            disabled={submitting}
-                            className="mt-3 rounded-full border-[#d7e5ee] bg-white px-4 text-[#355264] hover:bg-[#f5fbfe]"
-                          >
-                            반납하기
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="mt-3 text-sm text-gray-500">현재 이 물품으로 진행 중인 내 대여 기록이 없습니다.</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          ) : null}
-        </DialogContent>
-      ) : null}
-
       <footer className="border-t border-gray-300 bg-transparent py-10">
         <div className="mx-auto max-w-4xl px-4 text-center">
           <p className="mb-2 text-base font-bold text-gray-900">DO,UM</p>

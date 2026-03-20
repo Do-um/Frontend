@@ -1,15 +1,10 @@
-import type { Session, User as SupabaseAuthUser } from "@supabase/supabase-js"
+import type { Session, SupabaseClient, User as SupabaseAuthUser } from "@supabase/supabase-js"
 
 import { getSupabaseBrowserClient, hasSupabaseEnv } from "@/lib/supabase"
 
-const ACCESS_TOKEN_KEY = "access_token"
-const REFRESH_TOKEN_KEY = "refresh_token"
-const PUBLIC_USER_ID_KEY = "doum_public_user_id"
 export const AUTH_STATE_CHANGED_EVENT = "doum-auth-state-changed"
 
 const allowedLoginDomain = normalizeEmailDomain(process.env.NEXT_PUBLIC_ALLOWED_LOGIN_DOMAIN || "kookmin.ac.kr")
-const adminEmails = new Set(parseEmailList(process.env.NEXT_PUBLIC_ADMIN_EMAILS))
-const doumMemberEmails = new Set(parseEmailList(process.env.NEXT_PUBLIC_DOUM_MEMBER_EMAILS))
 
 export type NormalizedUserRole = "ADMIN" | "DOUM_MEMBER" | "OUTSIDER"
 
@@ -25,6 +20,7 @@ export type AuthenticatedUser = {
 
 type PublicUserRow = {
   id: number
+  auth_user_id: string | null
   email: string
   name: string
   profile_image_url: string | null
@@ -55,17 +51,6 @@ function normalizeEmailDomain(value: string) {
   return value.trim().replace(/^@+/, "").toLowerCase()
 }
 
-function parseEmailList(rawValue: string | undefined) {
-  if (!rawValue) {
-    return []
-  }
-
-  return rawValue
-    .split(/[\s,;]+/)
-    .map((value) => value.trim().toLowerCase())
-    .filter(Boolean)
-}
-
 function getAllowedDomainLabel() {
   return `@${allowedLoginDomain}`
 }
@@ -75,16 +60,6 @@ function isAllowedLoginEmail(email: string) {
 }
 
 function resolveInitialRole(email: string): NormalizedUserRole {
-  const normalizedEmail = email.trim().toLowerCase()
-
-  if (adminEmails.has(normalizedEmail)) {
-    return "ADMIN"
-  }
-
-  if (doumMemberEmails.has(normalizedEmail)) {
-    return "DOUM_MEMBER"
-  }
-
   return "OUTSIDER"
 }
 
@@ -94,39 +69,6 @@ function dispatchAuthStateChanged() {
   }
 
   window.dispatchEvent(new Event(AUTH_STATE_CHANGED_EVENT))
-}
-
-function updateStoredTokens(session: Session | null) {
-  if (typeof window === "undefined") {
-    return
-  }
-
-  if (!session) {
-    localStorage.removeItem(ACCESS_TOKEN_KEY)
-    localStorage.removeItem(REFRESH_TOKEN_KEY)
-    return
-  }
-
-  localStorage.setItem(ACCESS_TOKEN_KEY, session.access_token)
-
-  if (session.refresh_token) {
-    localStorage.setItem(REFRESH_TOKEN_KEY, session.refresh_token)
-  } else {
-    localStorage.removeItem(REFRESH_TOKEN_KEY)
-  }
-}
-
-function setStoredPublicUserId(userId: number | null) {
-  if (typeof window === "undefined") {
-    return
-  }
-
-  if (userId === null) {
-    localStorage.removeItem(PUBLIC_USER_ID_KEY)
-    return
-  }
-
-  localStorage.setItem(PUBLIC_USER_ID_KEY, String(userId))
 }
 
 function createRestrictedDomainError() {
@@ -200,10 +142,24 @@ function mapPublicUser(row: PublicUserRow): AuthenticatedUser {
   }
 }
 
-async function fetchPublicUserByEmail(email: string) {
-  const { data, error } = await getSupabaseBrowserClient()
+async function fetchPublicUserByAuthUserId(client: SupabaseClient, authUserId: string) {
+  const { data, error } = await client
     .from("users")
-    .select("id, email, name, profile_image_url, provider, role, created_at, updated_at")
+    .select("id, auth_user_id, email, name, profile_image_url, provider, role, created_at, updated_at")
+    .eq("auth_user_id", authUserId)
+    .maybeSingle()
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return (data as PublicUserRow | null) ?? null
+}
+
+async function fetchPublicUserByEmail(client: SupabaseClient, email: string) {
+  const { data, error } = await client
+    .from("users")
+    .select("id, auth_user_id, email, name, profile_image_url, provider, role, created_at, updated_at")
     .eq("email", email)
     .maybeSingle()
 
@@ -214,22 +170,23 @@ async function fetchPublicUserByEmail(email: string) {
   return (data as PublicUserRow | null) ?? null
 }
 
-async function insertPublicUser(authUser: SupabaseAuthUser) {
+async function insertPublicUser(client: SupabaseClient, authUser: SupabaseAuthUser) {
   const email = getPrimaryEmail(authUser)
-  const { data, error } = await getSupabaseBrowserClient()
+  const { data, error } = await client
     .from("users")
     .insert({
+      auth_user_id: authUser.id,
       email,
       name: getDisplayName(authUser),
       profile_image_url: getProfileImageUrl(authUser),
       provider: getProviderName(authUser),
       role: resolveInitialRole(email),
     })
-    .select("id, email, name, profile_image_url, provider, role, created_at, updated_at")
+    .select("id, auth_user_id, email, name, profile_image_url, provider, role, created_at, updated_at")
     .single()
 
   if (error) {
-    const fallback = await fetchPublicUserByEmail(email)
+    const fallback = (await fetchPublicUserByAuthUserId(client, authUser.id)) ?? (await fetchPublicUserByEmail(client, email))
     if (fallback) {
       return fallback
     }
@@ -240,12 +197,15 @@ async function insertPublicUser(authUser: SupabaseAuthUser) {
   return data as PublicUserRow
 }
 
-async function updatePublicUser(authUser: SupabaseAuthUser, currentUser: PublicUserRow) {
+async function updatePublicUser(client: SupabaseClient, authUser: SupabaseAuthUser, currentUser: PublicUserRow) {
+  const nextEmail = getPrimaryEmail(authUser)
   const nextName = getDisplayName(authUser)
   const nextProfileImageUrl = getProfileImageUrl(authUser)
   const nextProvider = getProviderName(authUser)
 
   if (
+    currentUser.auth_user_id === authUser.id &&
+    currentUser.email === nextEmail &&
     currentUser.name === nextName &&
     currentUser.profile_image_url === nextProfileImageUrl &&
     currentUser.provider === nextProvider
@@ -253,15 +213,17 @@ async function updatePublicUser(authUser: SupabaseAuthUser, currentUser: PublicU
     return currentUser
   }
 
-  const { data, error } = await getSupabaseBrowserClient()
+  const { data, error } = await client
     .from("users")
     .update({
+      auth_user_id: authUser.id,
+      email: nextEmail,
       name: nextName,
       profile_image_url: nextProfileImageUrl,
       provider: nextProvider,
     })
     .eq("id", currentUser.id)
-    .select("id, email, name, profile_image_url, provider, role, created_at, updated_at")
+    .select("id, auth_user_id, email, name, profile_image_url, provider, role, created_at, updated_at")
     .single()
 
   if (error) {
@@ -275,124 +237,56 @@ async function ensurePublicUserProfile(authUser: SupabaseAuthUser) {
   const email = getPrimaryEmail(authUser)
 
   if (!isAllowedLoginEmail(email)) {
-    if (hasSupabaseEnv()) {
-      await getSupabaseBrowserClient().auth.signOut()
-    }
-
-    clearStoredTokens()
+    await signOut()
     throw createRestrictedDomainError()
   }
 
-  const existingUser = await fetchPublicUserByEmail(email)
-  const profile = existingUser ? await updatePublicUser(authUser, existingUser) : await insertPublicUser(authUser)
-  setStoredPublicUserId(profile.id)
+  const client = getSupabaseBrowserClient()
+  const existingUser = (await fetchPublicUserByAuthUserId(client, authUser.id)) ?? (await fetchPublicUserByEmail(client, email))
+  const profile = existingUser ? await updatePublicUser(client, authUser, existingUser) : await insertPublicUser(client, authUser)
   return profile
 }
 
 export function getStoredAccessToken() {
-  if (typeof window === "undefined") {
-    return ""
-  }
-
-  return localStorage.getItem(ACCESS_TOKEN_KEY) || ""
+  return hasSupabaseEnv() ? "supabase-session" : ""
 }
 
 export function getStoredRefreshToken() {
-  if (typeof window === "undefined") {
-    return ""
-  }
-
-  return localStorage.getItem(REFRESH_TOKEN_KEY) || ""
+  return hasSupabaseEnv() ? "supabase-session" : ""
 }
 
-export function storeTokens(accessToken: string, refreshToken?: string) {
-  if (typeof window === "undefined") {
-    return
-  }
-
-  localStorage.setItem(ACCESS_TOKEN_KEY, accessToken)
-  if (refreshToken) {
-    localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken)
-  }
-  window.dispatchEvent(new Event(AUTH_STATE_CHANGED_EVENT))
+export function storeTokens() {
+  dispatchAuthStateChanged()
 }
 
 export function clearStoredTokens() {
-  if (typeof window === "undefined") {
-    return
-  }
-
-  localStorage.removeItem(ACCESS_TOKEN_KEY)
-  localStorage.removeItem(REFRESH_TOKEN_KEY)
-  localStorage.removeItem(PUBLIC_USER_ID_KEY)
-  window.dispatchEvent(new Event(AUTH_STATE_CHANGED_EVENT))
+  dispatchAuthStateChanged()
 }
 
-export function getAuthorizationHeaders(token = getStoredAccessToken()): HeadersInit {
-  if (!token) {
-    return {}
-  }
-
-  return {
-    Authorization: `Bearer ${token}`,
-  }
-}
-
-export async function restoreSupabaseSession() {
-  if (!hasSupabaseEnv()) {
-    return null
-  }
-
-  const { data, error } = await getSupabaseBrowserClient().auth.getSession()
-
-  if (error) {
-    throw new Error(error.message)
-  }
-
-  updateStoredTokens(data.session)
-  return data.session
-}
-
-export async function exchangeCodeForSessionIfPresent(code: string | null) {
-  if (!hasSupabaseEnv()) {
-    return null
-  }
-
-  const client = getSupabaseBrowserClient()
-  const { data: existingSessionData, error: existingSessionError } = await client.auth.getSession()
-
-  if (existingSessionError) {
-    throw new Error(existingSessionError.message)
-  }
-
-  if (existingSessionData.session) {
-    updateStoredTokens(existingSessionData.session)
-    return existingSessionData.session
-  }
-
-  if (!code) {
-    return null
-  }
-
-  const { data, error } = await client.auth.exchangeCodeForSession(code)
-
-  if (error) {
-    throw new Error(error.message)
-  }
-
-  updateStoredTokens(data.session)
-  return data.session
+export function getAuthorizationHeaders(): HeadersInit {
+  return {}
 }
 
 export async function fetchCurrentUser() {
-  const session = await restoreSupabaseSession()
+  if (!hasSupabaseEnv()) {
+    throw new Error("Supabase 환경변수가 설정되지 않았습니다.")
+  }
 
-  if (!session?.user) {
-    setStoredPublicUserId(null)
+  const client = getSupabaseBrowserClient()
+  const {
+    data: { user: authUser },
+    error,
+  } = await client.auth.getUser()
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  if (!authUser) {
     throw new Error("로그인이 필요합니다.")
   }
 
-  return mapPublicUser(await ensurePublicUserProfile(session.user))
+  return mapPublicUser(await ensurePublicUserProfile(authUser))
 }
 
 export async function requireAdminUser() {
@@ -461,12 +355,6 @@ export function subscribeToAuthChanges(onChange?: (session: Session | null) => v
   }
 
   const { data } = getSupabaseBrowserClient().auth.onAuthStateChange((_event, session) => {
-    updateStoredTokens(session)
-
-    if (!session) {
-      setStoredPublicUserId(null)
-    }
-
     dispatchAuthStateChanged()
     onChange?.(session)
   })

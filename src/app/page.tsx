@@ -1,12 +1,10 @@
 "use client"
 
+import dynamic from "next/dynamic"
 import Image from "next/image"
 import { useEffect, useMemo, useState } from "react"
 import { PencilLine, Plus } from "lucide-react"
 
-import { ActivityEditorDialog } from "@/components/pages/activity-editor-dialog"
-import { ClubContentEditorDialog } from "@/components/pages/club-content-editor-dialog"
-import { ClubProgramEditorDialog } from "@/components/pages/club-program-editor-dialog"
 import { HeaderNav } from "@/components/header-nav"
 import { SiteFooter } from "@/components/site-footer"
 import { Button } from "@/components/ui/button"
@@ -19,6 +17,20 @@ import {
   type ClubContent,
   type ClubProgramItem,
 } from "@/lib/content-api"
+import { resolveMediaUrl } from "@/lib/media"
+
+const ActivityEditorDialog = dynamic(
+  () => import("@/components/pages/activity-editor-dialog").then((module) => module.ActivityEditorDialog),
+  { ssr: false },
+)
+const ClubContentEditorDialog = dynamic(
+  () => import("@/components/pages/club-content-editor-dialog").then((module) => module.ClubContentEditorDialog),
+  { ssr: false },
+)
+const ClubProgramEditorDialog = dynamic(
+  () => import("@/components/pages/club-program-editor-dialog").then((module) => module.ClubProgramEditorDialog),
+  { ssr: false },
+)
 
 const defaultClubContent: ClubContent = {
   introTitle: "Do,um?",
@@ -137,7 +149,7 @@ export default function Home() {
         <div className="relative flex min-h-[calc(100vh-80px)] flex-col items-center justify-center px-8 pb-10 pt-6">
           <div className="flex w-full justify-center">
             <Image
-              src={clubContent.heroBannerImageUrl || "/hero-banner.png"}
+              src={resolveMediaUrl(clubContent.heroBannerImageUrl) || "/hero-banner.png"}
               alt="DO,UM 배너"
               width={1200}
               height={200}
@@ -260,7 +272,7 @@ export default function Home() {
                     <div className="relative aspect-[4/3] w-full max-w-[220px] overflow-hidden rounded-[20px] bg-[#dbe6ea]">
                       {activity.activityImages[0] ? (
                         <Image
-                          src={activity.activityImages[0]}
+                          src={resolveMediaUrl(activity.activityImages[0]) || "/placeholder.svg"}
                           alt={activity.activityId}
                           fill
                           className="object-cover"
@@ -317,7 +329,7 @@ export default function Home() {
 
             <div className="h-[18rem] w-full max-w-[28rem] lg:-mt-10">
               <Image
-                src={clubContent.studyImageUrl || "/skill.png"}
+                src={resolveMediaUrl(clubContent.studyImageUrl) || "/skill.png"}
                 alt="기술 스택 아이콘"
                 width={600}
                 height={472}

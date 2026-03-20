@@ -2,12 +2,33 @@ begin;
 
 -- Run Frontend/docs/supabase-schema.sql first.
 
+alter table public.users
+  add column if not exists auth_user_id uuid;
+
+update public.users as public_users
+set auth_user_id = auth_users.id
+from auth.users as auth_users
+where public_users.auth_user_id is null
+  and lower(public_users.email) = lower(coalesce(auth_users.email, ''));
+
+create unique index if not exists idx_users_auth_user_id
+on public.users(auth_user_id)
+where auth_user_id is not null;
+
 create or replace function public.current_user_email()
 returns text
 language sql
 stable
 as $$
   select lower(coalesce(auth.jwt() ->> 'email', ''))
+$$;
+
+create or replace function public.current_auth_user_id()
+returns uuid
+language sql
+stable
+as $$
+  select auth.uid()
 $$;
 
 create or replace function public.current_public_user_id()
@@ -19,7 +40,13 @@ set search_path = public
 as $$
   select id
   from public.users
-  where lower(email) = public.current_user_email()
+  where auth_user_id = public.current_auth_user_id()
+     or (
+       public.current_auth_user_id() is not null
+       and auth_user_id is null
+       and lower(email) = public.current_user_email()
+     )
+  order by case when auth_user_id = public.current_auth_user_id() then 0 else 1 end
   limit 1
 $$;
 
@@ -41,7 +68,14 @@ as $$
   select exists (
     select 1
     from public.users
-    where lower(email) = public.current_user_email()
+    where (
+      auth_user_id = public.current_auth_user_id()
+      or (
+        public.current_auth_user_id() is not null
+        and auth_user_id is null
+        and lower(email) = public.current_user_email()
+      )
+    )
       and role = 'ADMIN'
   )
 $$;
@@ -56,7 +90,14 @@ as $$
   select exists (
     select 1
     from public.users
-    where lower(email) = public.current_user_email()
+    where (
+      auth_user_id = public.current_auth_user_id()
+      or (
+        public.current_auth_user_id() is not null
+        and auth_user_id is null
+        and lower(email) = public.current_user_email()
+      )
+    )
       and role in ('ADMIN', 'DOUM_MEMBER', 'MEMBER', 'STAFF')
   )
 $$;
@@ -148,7 +189,13 @@ begin
     on public.users
     for select
     to authenticated
-    using (lower(email) = public.current_user_email());
+    using (
+      public.current_auth_user_id() is not null
+      and (
+        auth_user_id = public.current_auth_user_id()
+        or (auth_user_id is null and lower(email) = public.current_user_email())
+      )
+    );
 
     drop policy if exists "users self insert" on public.users;
     create policy "users self insert"
@@ -156,7 +203,9 @@ begin
     for insert
     to authenticated
     with check (
-      lower(email) = public.current_user_email()
+      public.current_auth_user_id() is not null
+      and auth_user_id = public.current_auth_user_id()
+      and lower(email) = public.current_user_email()
       and public.is_allowed_login_email()
     );
 
@@ -165,9 +214,17 @@ begin
     on public.users
     for update
     to authenticated
-    using (lower(email) = public.current_user_email())
+    using (
+      public.current_auth_user_id() is not null
+      and (
+        auth_user_id = public.current_auth_user_id()
+        or (auth_user_id is null and lower(email) = public.current_user_email())
+      )
+    )
     with check (
-      lower(email) = public.current_user_email()
+      public.current_auth_user_id() is not null
+      and auth_user_id = public.current_auth_user_id()
+      and lower(email) = public.current_user_email()
       and public.is_allowed_login_email()
     );
 
@@ -267,7 +324,21 @@ commit;
 -- using (bucket_id = 'images');
 --
 -- create policy "authenticated upload storage"
+-- create policy "admin upload storage"
 -- on storage.objects
 -- for insert
 -- to authenticated
--- with check (bucket_id = 'images');
+-- with check (bucket_id = 'images' and public.is_admin());
+--
+-- create policy "admin update storage"
+-- on storage.objects
+-- for update
+-- to authenticated
+-- using (bucket_id = 'images' and public.is_admin())
+-- with check (bucket_id = 'images' and public.is_admin());
+--
+-- create policy "admin delete storage"
+-- on storage.objects
+-- for delete
+-- to authenticated
+-- using (bucket_id = 'images' and public.is_admin());

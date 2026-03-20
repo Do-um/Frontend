@@ -17,6 +17,7 @@ export function LoginForm() {
   const searchParams = useSearchParams()
   const error = searchParams.get("error")
   const allowedDomain = searchParams.get("allowedDomain") || "@kookmin.ac.kr"
+  const nextPath = searchParams.get("next") || "/"
 
   const errorMessage =
     error === "restricted_domain"
@@ -31,7 +32,7 @@ export function LoginForm() {
         throw new Error("Supabase 환경변수가 설정되지 않았습니다.")
       }
 
-      await signInWithGoogle()
+      await signInWithGoogle(nextPath.startsWith("/") ? nextPath : "/")
     } catch (err) {
       console.error(err)
       alert("Supabase 로그인 설정이 완료되지 않았습니다.")

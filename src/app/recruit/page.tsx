@@ -1,14 +1,19 @@
 "use client"
 
+import dynamic from "next/dynamic"
 import Image from "next/image"
 import { useEffect, useState } from "react"
 import { PencilLine } from "lucide-react"
 
-import { RecruitContentEditorDialog } from "@/components/pages/recruit-content-editor-dialog"
 import { Button } from "@/components/ui/button"
 import { HeaderNav } from "@/components/header-nav"
 import { useAdminSession } from "@/hooks/use-admin-session"
 import { fetchRecruitContent, type RecruitContent } from "@/lib/content-api"
+
+const RecruitContentEditorDialog = dynamic(
+  () => import("@/components/pages/recruit-content-editor-dialog").then((module) => module.RecruitContentEditorDialog),
+  { ssr: false },
+)
 
 const defaultRecruitContent: RecruitContent = {
   overviewTitle: "모집 개요",

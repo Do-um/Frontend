@@ -1,5 +1,6 @@
 "use client"
 
+import dynamic from "next/dynamic"
 import Image from "next/image"
 import { useEffect, useState } from "react"
 import {
@@ -17,7 +18,6 @@ import {
   type LucideIcon,
 } from "lucide-react"
 
-import { ProjectEditorDialog } from "@/components/pages/project-editor-dialog"
 import { HeaderNav } from "@/components/header-nav"
 import { SiteFooter } from "@/components/site-footer"
 import { Button } from "@/components/ui/button"
@@ -25,7 +25,13 @@ import { Card } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { useAdminSession } from "@/hooks/use-admin-session"
 import { fetchProjects, type ProjectItem } from "@/lib/content-api"
+import { resolveMediaUrl } from "@/lib/media"
 import { hasSupabaseEnv } from "@/lib/supabase"
+
+const ProjectEditorDialog = dynamic(
+  () => import("@/components/pages/project-editor-dialog").then((module) => module.ProjectEditorDialog),
+  { ssr: false },
+)
 
 function formatDate(value?: string | null) {
   if (!value) {
@@ -101,7 +107,7 @@ function ProjectCard({
         <div className="relative aspect-[1.65/1] overflow-hidden bg-[linear-gradient(135deg,#dcecf2,#edf4e8)]">
           {project.thumbnailUrl ? (
             <img
-              src={project.thumbnailUrl}
+              src={resolveMediaUrl(project.thumbnailUrl) || ""}
               alt={project.title}
               className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
             />
@@ -383,7 +389,7 @@ export function ProjectsShowcasePage() {
                       <div className="relative overflow-hidden rounded-[28px] bg-white/65 shadow-[0_24px_60px_rgba(44,71,88,0.12)]">
                         {activeImage ? (
                           <img
-                            src={activeImage}
+                            src={resolveMediaUrl(activeImage) || ""}
                             alt={`${selectedProject.title} 대표 이미지`}
                             className="h-[280px] w-full object-cover sm:h-[360px] xl:h-[520px]"
                           />
@@ -411,7 +417,7 @@ export function ProjectsShowcasePage() {
                                 }`}
                               >
                                 <img
-                                  src={imageUrl}
+                                  src={resolveMediaUrl(imageUrl) || ""}
                                   alt={`${selectedProject.title} 썸네일 ${index + 1}`}
                                   className="h-24 w-full object-cover sm:h-28"
                                 />

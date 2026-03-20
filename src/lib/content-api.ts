@@ -800,7 +800,12 @@ async function syncRentalItemAvailableQuantity(itemId: number) {
   throwIfError(error, "대여 가능 수량을 동기화하지 못했습니다.")
 }
 
-async function upsertSingletonRow(table: string, payload: Record<string, unknown>, selectQuery: string, fallbackMessage: string) {
+async function upsertSingletonRow<T>(
+  table: string,
+  payload: Record<string, unknown>,
+  selectQuery: string,
+  fallbackMessage: string,
+) {
   const { data: existingRow, error: existingError } = await getSupabase()
     .from(table)
     .select("id")
@@ -813,12 +818,12 @@ async function upsertSingletonRow(table: string, payload: Record<string, unknown
   if (existingRow?.id) {
     const { data, error } = await getSupabase().from(table).update(payload).eq("id", existingRow.id).select(selectQuery).single()
     throwIfError(error, fallbackMessage)
-    return data
+    return data as T
   }
 
   const { data, error } = await getSupabase().from(table).insert(payload).select(selectQuery).single()
   throwIfError(error, fallbackMessage)
-  return data
+  return data as T
 }
 
 export async function fetchActivities() {
@@ -1204,7 +1209,7 @@ export async function updateProject(payload: ProjectWritePayload, _token = getSt
 
 export async function updateClubContent(payload: ClubContentWritePayload, _token = getStoredAccessToken()) {
   await requireAdminUser()
-  const data = (await upsertSingletonRow(
+  const data = await upsertSingletonRow<ClubContentRow>(
     "club_content",
     {
       intro_title: payload.introTitle.trim(),
@@ -1225,7 +1230,7 @@ export async function updateClubContent(payload: ClubContentWritePayload, _token
     },
     "id, intro_title, intro_lead, intro_description, activity_section_title, history_section_title, study_caption, study_title, learn_title, learn_description, grow_title, grow_description, share_title, share_description, hero_banner_image_url, study_image_url, created_at, updated_at",
     "동아리 소개를 저장하지 못했습니다.",
-  )) as ClubContentRow
+  )
 
   return mapClubContent(data)
 }
@@ -1452,7 +1457,7 @@ export async function createClubProgram(payload: ClubProgramWritePayload, _token
 
 export async function updateRecruitContent(payload: RecruitContentWritePayload, _token = getStoredAccessToken()) {
   await requireAdminUser()
-  const data = (await upsertSingletonRow(
+  const data = await upsertSingletonRow<RecruitContentRow>(
     "club_recruit_content",
     {
       overview_title: payload.overviewTitle.trim(),
@@ -1472,7 +1477,7 @@ export async function updateRecruitContent(payload: RecruitContentWritePayload, 
     },
     "id, overview_title, overview_description, application_period_title, application_start, application_end, interview_period_title, interview_start, interview_end, target_section_title, target_section_description, target_items, cta_title, cta_button_label, apply_url, created_at, updated_at",
     "모집 페이지를 저장하지 못했습니다.",
-  )) as RecruitContentRow
+  )
 
   return mapRecruitContent(data)
 }

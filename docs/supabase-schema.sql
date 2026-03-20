@@ -2,6 +2,7 @@ begin;
 
 create table if not exists public.users (
   id bigserial primary key,
+  auth_user_id uuid unique,
   email varchar(255) not null unique,
   name varchar(100) not null,
   profile_image_url varchar(500),
@@ -10,6 +11,10 @@ create table if not exists public.users (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+update public.users
+set email = lower(email)
+where email <> lower(email);
 
 create table if not exists public.introduce (
   id bigserial primary key,

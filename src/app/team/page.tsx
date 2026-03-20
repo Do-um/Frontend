@@ -1,17 +1,22 @@
 "use client"
 
+import dynamic from "next/dynamic"
 import Image from "next/image"
 import Link from "next/link"
 import { useEffect, useMemo, useState, type ReactNode } from "react"
 import { Github, Instagram, PencilLine, Plus, Trash2 } from "lucide-react"
 
-import { StaffEditorDialog } from "@/components/pages/staff-editor-dialog"
 import { HeaderNav } from "@/components/header-nav"
 import { SiteFooter } from "@/components/site-footer"
 import { Button } from "@/components/ui/button"
 import { useAdminSession } from "@/hooks/use-admin-session"
-import { getStoredAccessToken } from "@/lib/auth"
 import { deleteStaff, fetchStaff, type StaffItem } from "@/lib/content-api"
+import { resolveMediaUrl } from "@/lib/media"
+
+const StaffEditorDialog = dynamic(
+  () => import("@/components/pages/staff-editor-dialog").then((module) => module.StaffEditorDialog),
+  { ssr: false },
+)
 
 const departmentOrder = ["회장단", "총무부", "기획부", "홍보부"]
 const leadRoleOrder = ["회장", "부회장", "고문"]
@@ -163,18 +168,12 @@ export default function TeamPage() {
   }
 
   async function handleStaffDelete(target: StaffItem) {
-    const token = getStoredAccessToken()
-    if (!token) {
-      setError("관리자 로그인이 필요합니다.")
-      return
-    }
-
     if (!window.confirm(`${target.name} 운영진 정보를 삭제할까요?`)) {
       return
     }
 
     try {
-      await deleteStaff(target.staffId, token)
+      await deleteStaff(target.staffId)
       setStaff((current) => current.filter((item) => item.staffId !== target.staffId))
       if (editorState?.staff?.staffId === target.staffId) {
         setEditorState(null)
@@ -342,7 +341,7 @@ function MemberCard({
           <div className="relative h-[58px] w-[58px] shrink-0 overflow-hidden rounded-full border border-black/45 bg-[#d9d9d9]">
             {member.profileImage ? (
               <Image
-                src={member.profileImage}
+                src={resolveMediaUrl(member.profileImage) || "/placeholder-user.jpg"}
                 alt={member.name}
                 fill
                 className="object-cover"

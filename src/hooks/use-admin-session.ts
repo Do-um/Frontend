@@ -5,7 +5,6 @@ import { useEffect, useState } from "react"
 import {
   AUTH_STATE_CHANGED_EVENT,
   fetchCurrentUser,
-  getStoredAccessToken,
   normalizeUserRole,
   subscribeToAuthChanges,
   type AuthenticatedUser,
@@ -21,11 +20,6 @@ export function useAdminSession() {
       setUser(null)
       setLoading(false)
       return
-    }
-
-    const token = getStoredAccessToken()
-    if (!token) {
-      setUser(null)
     }
 
     setLoading(true)
@@ -51,19 +45,19 @@ export function useAdminSession() {
       void refreshSession()
     }
 
-    function handleStorage(event: StorageEvent) {
-      if (event.key === null || event.key === "access_token" || event.key === "refresh_token") {
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") {
         void refreshSession()
       }
     }
 
     window.addEventListener(AUTH_STATE_CHANGED_EVENT, handleAuthStateChanged)
-    window.addEventListener("storage", handleStorage)
+    document.addEventListener("visibilitychange", handleVisibilityChange)
 
     return () => {
       unsubscribe()
       window.removeEventListener(AUTH_STATE_CHANGED_EVENT, handleAuthStateChanged)
-      window.removeEventListener("storage", handleStorage)
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
     }
   }, [])
 
