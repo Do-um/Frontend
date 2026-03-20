@@ -434,11 +434,7 @@ export async function signInWithGoogle(nextPath = "/") {
     provider: "google",
     options: {
       redirectTo: redirectUrl.toString(),
-      queryParams: {
-        access_type: "offline",
-        hd: allowedLoginDomain,
-        prompt: "select_account",
-      },
+      scopes: "openid email profile https://www.googleapis.com/auth/userinfo.email",
     },
   })
 

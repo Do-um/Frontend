@@ -38,8 +38,9 @@ export default function OAuthCallbackPage() {
     }
 
     async function handleCallback() {
-      const errorCode = searchParams.get("error")
-      const errorDescription = searchParams.get("error_description")
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""))
+      const errorCode = searchParams.get("error") || hashParams.get("error") || hashParams.get("error_code")
+      const errorDescription = searchParams.get("error_description") || hashParams.get("error_description")
       const authCode = searchParams.get("code")
 
       if (errorCode || errorDescription) {
