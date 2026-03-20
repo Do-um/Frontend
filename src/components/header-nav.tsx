@@ -6,7 +6,7 @@ import Link from "next/link"
 import Image from "next/image"
 
 import { useAdminSession } from "@/hooks/use-admin-session"
-import { clearStoredTokens } from "@/lib/auth"
+import { signOut } from "@/lib/auth"
 
 // ========== 헤더 네비게이션 컴포넌트 ==========
 // 모든 페이지에서 공통으로 사용하는 헤더 컴포넌트
@@ -44,11 +44,14 @@ export function HeaderNav() {
     }
   }, [])
 
-  const handleLogout = () => {
-    clearStoredTokens()
-    setOpenMenu(null)
-    router.push("/")
-    router.refresh()
+  const handleLogout = async () => {
+    try {
+      await signOut()
+    } finally {
+      setOpenMenu(null)
+      router.push("/")
+      router.refresh()
+    }
   }
 
   return (

@@ -25,7 +25,7 @@ import { Card } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { useAdminSession } from "@/hooks/use-admin-session"
 import { fetchProjects, type ProjectItem } from "@/lib/content-api"
-import { hasApiBaseUrl } from "@/lib/api"
+import { hasSupabaseEnv } from "@/lib/supabase"
 
 function formatDate(value?: string | null) {
   if (!value) {
@@ -193,8 +193,8 @@ export function ProjectsShowcasePage() {
   const { isAdmin } = useAdminSession()
 
   useEffect(() => {
-    if (!hasApiBaseUrl()) {
-      setError("NEXT_PUBLIC_API_BASE_URL 설정이 필요합니다.")
+    if (!hasSupabaseEnv()) {
+      setError("Supabase 환경변수 설정이 필요합니다.")
       setLoading(false)
       return
     }
@@ -334,7 +334,7 @@ export function ProjectsShowcasePage() {
                   <h3 className="text-xl font-bold text-[#213542]">프로젝트 데이터를 불러오지 못했습니다.</h3>
                   <p className="mt-3 text-sm leading-6 text-[#677983]">{error}</p>
                   <p className="mt-2 text-sm text-[#8a98a0]">
-                    프론트 `.env.local`에 `NEXT_PUBLIC_API_BASE_URL=http://localhost:8080` 형태로 설정해 주세요.
+                    프론트 `.env.local`에 `NEXT_PUBLIC_SUPABASE_URL`과 `NEXT_PUBLIC_SUPABASE_ANON_KEY`를 설정해 주세요.
                   </p>
                 </Card>
               ) : null}
@@ -343,7 +343,7 @@ export function ProjectsShowcasePage() {
                 <Card className="rounded-[28px] border border-[#dbe6eb] bg-white/85 p-8 text-center shadow-none">
                   <h3 className="text-xl font-bold text-[#213542]">등록된 프로젝트가 없습니다.</h3>
                   <p className="mt-3 text-sm leading-6 text-[#677983]">
-                    `/api/project`에 프로젝트가 등록되면 이 영역이 카드형 프로젝트 보드로 채워집니다.
+                    `projects`, `project_images`, `project_tags`, `project_members` 테이블에 데이터가 등록되면 이 영역이 카드형 프로젝트 보드로 채워집니다.
                   </p>
                 </Card>
               ) : null}

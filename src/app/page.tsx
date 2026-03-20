@@ -2,7 +2,6 @@
 
 import Image from "next/image"
 import { useEffect, useMemo, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
 import { PencilLine, Plus } from "lucide-react"
 
 import { ActivityEditorDialog } from "@/components/pages/activity-editor-dialog"
@@ -12,7 +11,6 @@ import { HeaderNav } from "@/components/header-nav"
 import { SiteFooter } from "@/components/site-footer"
 import { Button } from "@/components/ui/button"
 import { useAdminSession } from "@/hooks/use-admin-session"
-import { storeTokens } from "@/lib/auth"
 import {
   fetchActivities,
   fetchClubContent,
@@ -21,20 +19,6 @@ import {
   type ClubContent,
   type ClubProgramItem,
 } from "@/lib/content-api"
-
-function pickToken(params: URLSearchParams) {
-  return (
-    params.get("access_token") ||
-    params.get("accessToken") ||
-    params.get("token") ||
-    params.get("jwt") ||
-    ""
-  )
-}
-
-function pickRefreshToken(params: URLSearchParams) {
-  return params.get("refresh_token") || params.get("refreshToken") || ""
-}
 
 const defaultClubContent: ClubContent = {
   introTitle: "Do,um?",
@@ -64,8 +48,6 @@ function compareActivities(left: ActivityItem, right: ActivityItem) {
 }
 
 export default function Home() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
   const { isAdmin } = useAdminSession()
   const [clubContent, setClubContent] = useState<ClubContent>(defaultClubContent)
   const [programs, setPrograms] = useState<ClubProgramItem[]>([])
@@ -81,39 +63,6 @@ export default function Home() {
     mode: "create" | "edit"
     activity: ActivityItem | null
   } | null>(null)
-
-  useEffect(() => {
-    if (!searchParams) {
-      return
-    }
-
-    const token = pickToken(searchParams)
-    const refreshToken = pickRefreshToken(searchParams)
-    const errorCode = searchParams.get("error") || searchParams.get("error_description")
-    const allowedDomain = searchParams.get("allowedDomain")
-
-    if (!token && !errorCode) {
-      return
-    }
-
-    if (errorCode) {
-      const target = new URL("/login", window.location.origin)
-      target.searchParams.set("error", errorCode)
-      if (allowedDomain) {
-        target.searchParams.set("allowedDomain", allowedDomain)
-      }
-      router.replace(`${target.pathname}${target.search}`)
-      return
-    }
-
-    try {
-      storeTokens(token, refreshToken)
-      router.replace("/")
-    } catch (err) {
-      console.error(err)
-      router.replace("/")
-    }
-  }, [router, searchParams])
 
   useEffect(() => {
     let cancelled = false

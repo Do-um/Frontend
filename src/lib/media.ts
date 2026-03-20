@@ -1,4 +1,4 @@
-import { getApiBaseUrl } from "@/lib/api"
+import { getSupabaseUrl } from "@/lib/supabase"
 
 export function resolveMediaUrl(value?: string | null) {
   if (!value) {
@@ -17,15 +17,11 @@ export function resolveMediaUrl(value?: string | null) {
   try {
     return new URL(trimmed).toString()
   } catch {
-    const baseUrl = getApiBaseUrl()
-    if (!baseUrl) {
-      return trimmed
+    const supabaseUrl = getSupabaseUrl()
+    if (trimmed.startsWith("/storage/")) {
+      return supabaseUrl ? `${supabaseUrl}${trimmed}` : trimmed
     }
 
-    if (trimmed.startsWith("/")) {
-      return `${baseUrl}${trimmed}`
-    }
-
-    return `${baseUrl}/${trimmed.replace(/^\/+/, "")}`
+    return trimmed
   }
 }

@@ -12,7 +12,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useAdminSession } from "@/hooks/use-admin-session"
-import { hasApiBaseUrl } from "@/lib/api"
 import {
   createRental,
   deleteRentalItem,
@@ -25,6 +24,7 @@ import {
   type UserRentalHistoryItem,
 } from "@/lib/content-api"
 import { resolveMediaUrl } from "@/lib/media"
+import { hasSupabaseEnv } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
 
 function formatDateTime(value?: string | null) {
@@ -375,8 +375,8 @@ export default function RentalPage() {
   }
 
   useEffect(() => {
-    if (!hasApiBaseUrl()) {
-      setError("NEXT_PUBLIC_API_BASE_URL 설정이 필요합니다.")
+    if (!hasSupabaseEnv()) {
+      setError("Supabase 환경변수 설정이 필요합니다.")
       setLoadingItems(false)
       return
     }
@@ -385,7 +385,7 @@ export default function RentalPage() {
   }, [])
 
   useEffect(() => {
-    if (sessionLoading || !hasApiBaseUrl()) {
+    if (sessionLoading || !hasSupabaseEnv()) {
       return
     }
 

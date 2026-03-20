@@ -10,7 +10,8 @@ import { useSearchParams } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { HeaderNav } from "@/components/header-nav"
-import { buildApiUrl } from "@/lib/api"
+import { signInWithGoogle } from "@/lib/auth"
+import { hasSupabaseEnv } from "@/lib/supabase"
 
 export function LoginForm() {
   const searchParams = useSearchParams()
@@ -24,13 +25,16 @@ export function LoginForm() {
         ? "Google 로그인에 실패했습니다. 다시 시도해 주세요."
         : ""
 
-  const handleGoogleLogin = () => {
+  const handleGoogleLogin = async () => {
     try {
-      const url = buildApiUrl("/oauth2/authorization/google")
-      window.location.href = url
+      if (!hasSupabaseEnv()) {
+        throw new Error("Supabase 환경변수가 설정되지 않았습니다.")
+      }
+
+      await signInWithGoogle()
     } catch (err) {
       console.error(err)
-      alert("API 서버 주소가 설정되지 않았습니다.")
+      alert("Supabase 로그인 설정이 완료되지 않았습니다.")
     }
   }
 
@@ -97,9 +101,7 @@ export function LoginForm() {
                 - text-base: 기본 폰트 크기 (16px)
                 - bg-transparent: 투명 배경
                 
-                TODO: 나중에 실제 Google OAuth 로그인 기능 연결
-                - onClick 이벤트 추가
-                - Google OAuth API 연동
+                Supabase Google OAuth 로그인 진입점
             */}
             <Button
               variant="outline"

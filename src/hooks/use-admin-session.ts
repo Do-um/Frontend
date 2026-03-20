@@ -7,26 +7,31 @@ import {
   fetchCurrentUser,
   getStoredAccessToken,
   normalizeUserRole,
+  subscribeToAuthChanges,
   type AuthenticatedUser,
 } from "@/lib/auth"
+import { hasSupabaseEnv } from "@/lib/supabase"
 
 export function useAdminSession() {
   const [user, setUser] = useState<AuthenticatedUser | null>(null)
   const [loading, setLoading] = useState(true)
 
   async function refreshSession() {
-    const token = getStoredAccessToken()
-
-    if (!token) {
+    if (!hasSupabaseEnv()) {
       setUser(null)
       setLoading(false)
       return
     }
 
+    const token = getStoredAccessToken()
+    if (!token) {
+      setUser(null)
+    }
+
     setLoading(true)
 
     try {
-      const profile = await fetchCurrentUser(token)
+      const profile = await fetchCurrentUser()
       setUser(profile)
     } catch {
       setUser(null)
@@ -37,6 +42,10 @@ export function useAdminSession() {
 
   useEffect(() => {
     void refreshSession()
+
+    const unsubscribe = subscribeToAuthChanges(() => {
+      void refreshSession()
+    })
 
     function handleAuthStateChanged() {
       void refreshSession()
@@ -52,6 +61,7 @@ export function useAdminSession() {
     window.addEventListener("storage", handleStorage)
 
     return () => {
+      unsubscribe()
       window.removeEventListener(AUTH_STATE_CHANGED_EVENT, handleAuthStateChanged)
       window.removeEventListener("storage", handleStorage)
     }

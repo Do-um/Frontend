@@ -24,7 +24,7 @@ import { Card } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { useAdminSession } from "@/hooks/use-admin-session"
 import { fetchActivities, type ActivityItem } from "@/lib/content-api"
-import { hasApiBaseUrl } from "@/lib/api"
+import { hasSupabaseEnv } from "@/lib/supabase"
 
 const PAGE_SIZE = 6
 type ActivityArchiveMode = "all" | "study"
@@ -232,7 +232,7 @@ export function ActivitiesLandingPage({
   sectionEyebrow = "DO,UM STORYBOARD",
   sectionTitle = "활동 기록",
   emptyTitle = "등록된 활동이 없습니다.",
-  emptyDescription = "`/api/introduce`에 데이터가 들어오면 이 영역이 바로 카드형 기록 보드로 채워집니다.",
+  emptyDescription = "`introduce`와 `introduce_activity_image` 테이블에 데이터가 들어오면 이 영역이 바로 카드형 기록 보드로 채워집니다.",
 }: ActivitiesLandingPageProps = {}) {
   const [activities, setActivities] = useState<ActivityItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -248,8 +248,8 @@ export function ActivitiesLandingPage({
   const { isAdmin } = useAdminSession()
 
   useEffect(() => {
-    if (!hasApiBaseUrl()) {
-      setError("NEXT_PUBLIC_API_BASE_URL 설정이 필요합니다.")
+    if (!hasSupabaseEnv()) {
+      setError("Supabase 환경변수 설정이 필요합니다.")
       setLoading(false)
       return
     }
@@ -397,7 +397,7 @@ export function ActivitiesLandingPage({
                   <h3 className="text-xl font-bold text-[#213542]">활동 데이터를 불러오지 못했습니다.</h3>
                   <p className="mt-3 text-sm leading-6 text-[#677983]">{error}</p>
                   <p className="mt-2 text-sm text-[#8a98a0]">
-                    프론트 `.env.local`에 `NEXT_PUBLIC_API_BASE_URL=http://localhost:8080` 형태로 설정해 주세요.
+                    프론트 `.env.local`에 `NEXT_PUBLIC_SUPABASE_URL`과 `NEXT_PUBLIC_SUPABASE_ANON_KEY`를 설정해 주세요.
                   </p>
                 </Card>
               ) : null}
