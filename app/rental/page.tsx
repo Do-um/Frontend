@@ -775,8 +775,8 @@ export default function RentalPage() {
             ref={detailSectionRef}
             className="mt-12 overflow-hidden rounded-[32px] bg-[#f9f6f1] shadow-[0_22px_70px_rgba(29,49,63,0.12)]"
           >
-            <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_0.9fr]">
-              <div className="border-b border-[#e8ecef] bg-[#f3f6f8] p-5 lg:border-b-0 lg:border-r lg:p-6">
+            <div className="grid grid-cols-1">
+              <div className="bg-[#f3f6f8] p-5 sm:p-6">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#6a7d88]">대여 상세</p>
