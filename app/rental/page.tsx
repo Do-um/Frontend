@@ -897,47 +897,47 @@ export default function RentalPage() {
                         <p className="mt-2 text-sm text-gray-500">현재 예약된 일정이 없습니다.</p>
                       )}
                     </div>
-                  </div>
-                </div>
 
-                <div className="mt-5 rounded-3xl bg-white p-5 shadow-[0_16px_40px_rgba(47,74,91,0.06)]">
-                  <p className="text-sm font-semibold text-gray-800">대여 정보 입력</p>
-                  <div className="mt-4 space-y-3">
-                    <Input
-                      type="number"
-                      min={1}
-                      max={selectedItem.totalQuantity}
-                      value={quantityInput}
-                      onChange={(event) => setQuantityInput(event.target.value)}
-                      placeholder="대여 수량"
-                      disabled={!isLoggedIn || !canUseRentalActions || submitting}
-                    />
-                    <Textarea
-                      value={purposeInput}
-                      onChange={(event) => setPurposeInput(event.target.value)}
-                      placeholder="대여 사유를 입력해 주세요."
-                      className="min-h-[120px]"
-                      disabled={!isLoggedIn || !canUseRentalActions || submitting}
-                    />
-                    <div className="rounded-2xl bg-[#f7fafc] px-4 py-3 text-xs text-gray-600">
-                      선택한 기간:{" "}
-                      {range?.from && range?.to
-                        ? `${formatDate(toApiDate(range.from))} ~ ${formatDate(toApiDate(range.to))}`
-                        : "기간을 선택해 주세요."}
+                    <div className="rounded-3xl bg-white p-5 shadow-[0_16px_40px_rgba(47,74,91,0.06)]">
+                      <p className="text-sm font-semibold text-gray-800">대여 정보 입력</p>
+                      <div className="mt-4 space-y-3">
+                        <Input
+                          type="number"
+                          min={1}
+                          max={selectedItem.totalQuantity}
+                          value={quantityInput}
+                          onChange={(event) => setQuantityInput(event.target.value)}
+                          placeholder="대여 수량"
+                          disabled={!isLoggedIn || !canUseRentalActions || submitting}
+                        />
+                        <Textarea
+                          value={purposeInput}
+                          onChange={(event) => setPurposeInput(event.target.value)}
+                          placeholder="대여 사유를 입력해 주세요."
+                          className="min-h-[120px]"
+                          disabled={!isLoggedIn || !canUseRentalActions || submitting}
+                        />
+                        <div className="rounded-2xl bg-[#f7fafc] px-4 py-3 text-xs text-gray-600">
+                          선택한 기간:{" "}
+                          {range?.from && range?.to
+                            ? `${formatDate(toApiDate(range.from))} ~ ${formatDate(toApiDate(range.to))}`
+                            : "기간을 선택해 주세요."}
+                        </div>
+                        {!isLoggedIn ? (
+                          <p className="text-xs text-gray-500">로그인 후 대여할 수 있습니다.</p>
+                        ) : !canUseRentalActions ? (
+                          <p className="text-xs text-gray-500">현재 계정은 조회 전용입니다. 어드민 및 두음 회원만 대여할 수 있습니다.</p>
+                        ) : null}
+                        {actionError ? <p className="text-xs text-red-500">{actionError}</p> : null}
+                        <Button
+                          className="w-full"
+                          onClick={handleRent}
+                          disabled={!isLoggedIn || !canUseRentalActions || submitting || getItemStatusMeta(selectedItem).disabled}
+                        >
+                          {submitting ? "처리 중.." : "대여 신청"}
+                        </Button>
+                      </div>
                     </div>
-                    {!isLoggedIn ? (
-                      <p className="text-xs text-gray-500">로그인 후 대여할 수 있습니다.</p>
-                    ) : !canUseRentalActions ? (
-                      <p className="text-xs text-gray-500">현재 계정은 조회 전용입니다. 어드민 및 두음 회원만 대여할 수 있습니다.</p>
-                    ) : null}
-                    {actionError ? <p className="text-xs text-red-500">{actionError}</p> : null}
-                    <Button
-                      className="w-full"
-                      onClick={handleRent}
-                      disabled={!isLoggedIn || !canUseRentalActions || submitting || getItemStatusMeta(selectedItem).disabled}
-                    >
-                      {submitting ? "처리 중.." : "대여 신청"}
-                    </Button>
                   </div>
                 </div>
 
