@@ -938,42 +938,42 @@ export default function RentalPage() {
                         </Button>
                       </div>
                     </div>
-                  </div>
-                </div>
 
-                <div className="mt-5 rounded-3xl bg-white p-5 shadow-[0_16px_40px_rgba(47,74,91,0.06)]">
-                  <p className="text-sm font-semibold text-gray-800">이 물품의 내 대여 내역</p>
-                  {!isLoggedIn ? (
-                    <p className="mt-3 text-sm text-gray-500">로그인 후 확인할 수 있습니다.</p>
-                  ) : !canUseRentalActions ? (
-                    <p className="mt-3 text-sm text-gray-500">현재 계정은 조회 전용입니다.</p>
-                  ) : selectedItemRentals.length ? (
-                    <div className="mt-3 space-y-2">
-                      {selectedItemRentals.map((rental) => (
-                        <div
-                          key={rental.rentalId}
-                          className="rounded-2xl border border-[#e3edf2] bg-[#f8fbfd] px-4 py-4"
-                        >
-                          <p className="text-sm font-semibold text-gray-800">
-                            {formatDateRange(rental.startDate, rental.endDate)} · {rental.quantity}개
-                          </p>
-                          <p className="mt-2 text-sm text-gray-600">{rental.purpose || "사유 미입력"}</p>
-                          <p className="mt-1 text-xs text-gray-500">신청 시각 {formatDateTime(rental.rentedAt)}</p>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleReturn(rental.rentalId)}
-                            disabled={submitting}
-                            className="mt-3 rounded-full border-[#d7e5ee] bg-white px-4 text-[#355264] hover:bg-[#f5fbfe]"
-                          >
-                            반납하기
-                          </Button>
+                    <div className="rounded-3xl bg-white p-5 shadow-[0_16px_40px_rgba(47,74,91,0.06)]">
+                      <p className="text-sm font-semibold text-gray-800">이 물품의 내 대여 내역</p>
+                      {!isLoggedIn ? (
+                        <p className="mt-3 text-sm text-gray-500">로그인 후 확인할 수 있습니다.</p>
+                      ) : !canUseRentalActions ? (
+                        <p className="mt-3 text-sm text-gray-500">현재 계정은 조회 전용입니다.</p>
+                      ) : selectedItemRentals.length ? (
+                        <div className="mt-3 space-y-2">
+                          {selectedItemRentals.map((rental) => (
+                            <div
+                              key={rental.rentalId}
+                              className="rounded-2xl border border-[#e3edf2] bg-[#f8fbfd] px-4 py-4"
+                            >
+                              <p className="text-sm font-semibold text-gray-800">
+                                {formatDateRange(rental.startDate, rental.endDate)} · {rental.quantity}개
+                              </p>
+                              <p className="mt-2 text-sm text-gray-600">{rental.purpose || "사유 미입력"}</p>
+                              <p className="mt-1 text-xs text-gray-500">신청 시각 {formatDateTime(rental.rentedAt)}</p>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleReturn(rental.rentalId)}
+                                disabled={submitting}
+                                className="mt-3 rounded-full border-[#d7e5ee] bg-white px-4 text-[#355264] hover:bg-[#f5fbfe]"
+                              >
+                                반납하기
+                              </Button>
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      ) : (
+                        <p className="mt-3 text-sm text-gray-500">현재 이 물품으로 진행 중인 내 대여 기록이 없습니다.</p>
+                      )}
                     </div>
-                  ) : (
-                    <p className="mt-3 text-sm text-gray-500">현재 이 물품으로 진행 중인 내 대여 기록이 없습니다.</p>
-                  )}
+                  </div>
                 </div>
               </div>
             </div>
