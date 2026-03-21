@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useSyncExternalStore } from "react"
 
 import {
   AUTH_STATE_CHANGED_EVENT,
@@ -11,54 +11,111 @@ import {
 } from "@/lib/auth"
 import { hasSupabaseEnv } from "@/lib/supabase"
 
-export function useAdminSession() {
-  const [user, setUser] = useState<AuthenticatedUser | null>(null)
-  const [loading, setLoading] = useState(true)
+type AdminSessionState = {
+  user: AuthenticatedUser | null
+  loading: boolean
+  initialized: boolean
+}
 
-  async function refreshSession() {
-    if (!hasSupabaseEnv()) {
-      setUser(null)
-      setLoading(false)
-      return
+const listeners = new Set<() => void>()
+let sessionState: AdminSessionState = {
+  user: null,
+  loading: true,
+  initialized: false,
+}
+let refreshPromise: Promise<void> | null = null
+let lifecycleInitialized = false
+
+function emitSessionChange() {
+  listeners.forEach((listener) => listener())
+}
+
+function subscribe(listener: () => void) {
+  listeners.add(listener)
+
+  return () => {
+    listeners.delete(listener)
+  }
+}
+
+function getSnapshot() {
+  return sessionState
+}
+
+async function refreshSessionState(showLoading = !sessionState.initialized) {
+  if (!hasSupabaseEnv()) {
+    sessionState = {
+      user: null,
+      loading: false,
+      initialized: true,
     }
-
-    setLoading(true)
-
-    try {
-      const profile = await fetchCurrentUser()
-      setUser(profile)
-    } catch {
-      setUser(null)
-    } finally {
-      setLoading(false)
-    }
+    emitSessionChange()
+    return
   }
 
-  useEffect(() => {
-    void refreshSession()
+  if (refreshPromise) {
+    return refreshPromise
+  }
 
-    const unsubscribe = subscribeToAuthChanges(() => {
-      void refreshSession()
-    })
-
-    function handleAuthStateChanged() {
-      void refreshSession()
+  if (showLoading) {
+    sessionState = {
+      ...sessionState,
+      loading: true,
     }
+    emitSessionChange()
+  }
 
-    function handleVisibilityChange() {
-      if (document.visibilityState === "visible") {
-        void refreshSession()
+  refreshPromise = (async () => {
+    try {
+      const profile = await fetchCurrentUser()
+      sessionState = {
+        user: profile,
+        loading: false,
+        initialized: true,
       }
+    } catch {
+      sessionState = {
+        user: null,
+        loading: false,
+        initialized: true,
+      }
+    } finally {
+      refreshPromise = null
+      emitSessionChange()
     }
+  })()
 
-    window.addEventListener(AUTH_STATE_CHANGED_EVENT, handleAuthStateChanged)
-    document.addEventListener("visibilitychange", handleVisibilityChange)
+  return refreshPromise
+}
 
-    return () => {
-      unsubscribe()
-      window.removeEventListener(AUTH_STATE_CHANGED_EVENT, handleAuthStateChanged)
-      document.removeEventListener("visibilitychange", handleVisibilityChange)
+function initializeSessionLifecycle() {
+  if (typeof window === "undefined" || lifecycleInitialized) {
+    return
+  }
+
+  lifecycleInitialized = true
+  void refreshSessionState(!sessionState.initialized)
+
+  subscribeToAuthChanges(() => {
+    void refreshSessionState(false)
+  })
+
+  window.addEventListener(AUTH_STATE_CHANGED_EVENT, () => {
+    void refreshSessionState(false)
+  })
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      void refreshSessionState(false)
     }
+  })
+}
+
+export function useAdminSession() {
+  const { user, loading } = useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
+
+  useEffect(() => {
+    initializeSessionLifecycle()
   }, [])
 
   const role = normalizeUserRole(user?.role)
@@ -71,6 +128,6 @@ export function useAdminSession() {
     isAdmin: role === "ADMIN",
     isDoumMember: role === "ADMIN" || role === "DOUM_MEMBER",
     isOutsider: role === "OUTSIDER",
-    refreshSession,
+    refreshSession: () => refreshSessionState(false),
   }
 }

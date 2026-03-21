@@ -16,7 +16,7 @@ export function HeaderNav() {
   const router = useRouter()
   const [openMenu, setOpenMenu] = useState<"intro" | "activities" | null>(null)
   const closeTimerRef = useRef<number | null>(null)
-  const { isAdmin, isLoggedIn } = useAdminSession()
+  const { isAdmin, isLoggedIn, loading: sessionLoading } = useAdminSession()
 
   const clearCloseTimer = () => {
     if (closeTimerRef.current !== null) {
@@ -152,7 +152,14 @@ export function HeaderNav() {
           >
             대여
           </Link>
-          {isAdmin ? (
+          {sessionLoading ? (
+            <span
+              aria-hidden="true"
+              className="inline-flex h-11 items-center px-3 text-sm font-semibold leading-none opacity-0"
+            >
+              권한 관리
+            </span>
+          ) : isAdmin ? (
             <Link
               href="/admin/users"
               className="inline-flex h-11 items-center px-3 text-sm font-semibold leading-none text-[#18232d] transition-colors hover:text-[#47708a]"
@@ -160,18 +167,25 @@ export function HeaderNav() {
               권한 관리
             </Link>
           ) : null}
-          {isLoggedIn ? (
+          {sessionLoading ? (
+            <span
+              aria-hidden="true"
+              className="inline-flex h-11 min-w-[72px] items-center justify-center px-3 text-sm font-semibold leading-none opacity-0"
+            >
+              로그아웃
+            </span>
+          ) : isLoggedIn ? (
             <button
               type="button"
               onClick={handleLogout}
-              className="inline-flex h-11 items-center px-3 text-sm font-semibold leading-none text-[#18232d] transition-colors hover:text-[#47708a]"
+              className="inline-flex h-11 min-w-[72px] items-center justify-center px-3 text-sm font-semibold leading-none text-[#18232d] transition-colors hover:text-[#47708a]"
             >
               로그아웃
             </button>
           ) : (
             <Link
               href="/login"
-              className="inline-flex h-11 items-center px-3 text-sm font-semibold leading-none text-[#18232d] transition-colors hover:text-[#47708a]"
+              className="inline-flex h-11 min-w-[72px] items-center justify-center px-3 text-sm font-semibold leading-none text-[#18232d] transition-colors hover:text-[#47708a]"
             >
               로그인
             </Link>
