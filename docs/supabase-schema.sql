@@ -224,6 +224,9 @@ alter table public.rentals
   add column if not exists rented_at timestamptz not null default now(),
   add column if not exists returned_at timestamptz;
 
+alter table public.rentals
+  alter column rented_at set default now();
+
 do $$
 begin
   if exists (

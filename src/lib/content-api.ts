@@ -1297,6 +1297,7 @@ export async function createRental(payload: RentalCreatePayload, _token = getSto
       end_date: payload.endDate,
       purpose: payload.purpose.trim(),
       status: "RENTED",
+      rented_at: new Date().toISOString(),
     })
     .select("id, rental_item_id, user_id, quantity, start_date, end_date, purpose, status, rented_at, returned_at")
     .single()
