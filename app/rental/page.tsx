@@ -794,113 +794,110 @@ export default function RentalPage() {
                   </Button>
                 </div>
 
-                <div className="mt-4 overflow-hidden rounded-3xl bg-white shadow-[0_16px_40px_rgba(47,74,91,0.08)]">
-                  <div className="relative h-52 w-full bg-[#e9eef1]">
-                    <Image
-                      src={resolveMediaUrl(selectedItem.itemImage) || "/placeholder.svg"}
-                      alt={selectedItem.name}
-                      fill
-                      className="object-cover"
-                      sizes="(min-width: 1024px) 540px, 100vw"
-                    />
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2 px-5 py-4 text-xs text-gray-600">
-                    <span className="rounded-full bg-[#f1f6f9] px-3 py-1.5">{selectedItem.category}</span>
-                    <span className="rounded-full bg-[#f1f6f9] px-3 py-1.5">총 {selectedItem.totalQuantity}개</span>
-                    <span className="rounded-full bg-[#f1f6f9] px-3 py-1.5">최대 {selectedItem.maxRentalDays}일</span>
-                  </div>
-                </div>
+                <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start">
+                  <div className="space-y-4">
+                    <div className="overflow-hidden rounded-3xl bg-white shadow-[0_16px_40px_rgba(47,74,91,0.08)]">
+                      <div className="relative h-44 w-full bg-[#e9eef1] lg:h-48">
+                        <Image
+                          src={resolveMediaUrl(selectedItem.itemImage) || "/placeholder.svg"}
+                          alt={selectedItem.name}
+                          fill
+                          className="object-cover"
+                          sizes="(min-width: 1280px) 420px, (min-width: 1024px) 540px, 100vw"
+                        />
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 px-4 py-3 text-xs text-gray-600">
+                        <span className="rounded-full bg-[#f1f6f9] px-3 py-1.5">{selectedItem.category}</span>
+                        <span className="rounded-full bg-[#f1f6f9] px-3 py-1.5">총 {selectedItem.totalQuantity}개</span>
+                        <span className="rounded-full bg-[#f1f6f9] px-3 py-1.5">최대 {selectedItem.maxRentalDays}일</span>
+                      </div>
+                    </div>
 
-                <div className="mt-5 rounded-3xl bg-white p-4 shadow-[0_16px_40px_rgba(47,74,91,0.08)]">
-                  <p className="text-sm font-semibold text-gray-800">대여 기간 선택</p>
-                  <div className="mt-4 overflow-x-auto">
-                    <Calendar
-                      mode="range"
-                      selected={range}
-                      onSelect={(nextRange) => {
-                        setRange(nextRange)
-                        setActionError("")
-                      }}
-                      disabled={(date) =>
-                        startOfDay(date) < startOfDay() ||
-                        fullyBookedDates.some((blockedDate) => blockedDate.toDateString() === date.toDateString())
-                      }
-                      modifiers={{
-                        booked: (date) =>
-                          fullyBookedDates.some((blockedDate) => blockedDate.toDateString() === date.toDateString()),
-                      }}
-                      modifiersClassNames={{
-                        booked: "bg-blue-100 text-blue-900 opacity-60",
-                      }}
-                      components={{
-                        DayButton: (props) => {
-                          const dateKey = toDateKey(props.day.date)
+                    <div className="rounded-3xl bg-white p-4 shadow-[0_16px_40px_rgba(47,74,91,0.08)]">
+                      <p className="text-sm font-semibold text-gray-800">대여 기간 선택</p>
+                      <div className="mt-3 overflow-x-auto">
+                        <Calendar
+                          mode="range"
+                          selected={range}
+                          onSelect={(nextRange) => {
+                            setRange(nextRange)
+                            setActionError("")
+                          }}
+                          disabled={(date) =>
+                            startOfDay(date) < startOfDay() ||
+                            fullyBookedDates.some((blockedDate) => blockedDate.toDateString() === date.toDateString())
+                          }
+                          modifiers={{
+                            booked: (date) =>
+                              fullyBookedDates.some((blockedDate) => blockedDate.toDateString() === date.toDateString()),
+                          }}
+                          modifiersClassNames={{
+                            booked: "bg-blue-100 text-blue-900 opacity-60",
+                          }}
+                          components={{
+                            DayButton: (props) => {
+                              const dateKey = toDateKey(props.day.date)
 
-                          return (
-                            <RentalScheduleDayButton
-                              {...props}
-                              label={reservationLabelsByDate.get(dateKey)}
-                              tooltip={reservationTooltipsByDate.get(dateKey)}
-                            />
-                          )
-                        },
-                      }}
-                      className="w-full [--cell-size:--spacing(10)]"
-                    />
+                              return (
+                                <RentalScheduleDayButton
+                                  {...props}
+                                  label={reservationLabelsByDate.get(dateKey)}
+                                  tooltip={reservationTooltipsByDate.get(dateKey)}
+                                />
+                              )
+                            },
+                          }}
+                          className="w-full [--cell-size:--spacing(10)] xl:[--cell-size:--spacing(9)]"
+                        />
+                      </div>
+                    </div>
                   </div>
-                </div>
 
-                <div className="mt-5 grid gap-4 md:grid-cols-2">
-                  <div className="rounded-3xl bg-white p-4 shadow-[0_16px_40px_rgba(47,74,91,0.06)]">
-                    <p className="text-sm font-semibold text-gray-800">예약 안내</p>
-                    <p className="mt-3 text-sm leading-6 text-gray-600">
-                      달력의 예약 표시는 해당 날짜에 이미 예약을 진행한 사람입니다. 수량이 모두 찬 날짜는 선택할 수 없습니다.
-                    </p>
+                  <div className="space-y-4">
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-1">
+                      <div className="rounded-3xl bg-white p-4 shadow-[0_16px_40px_rgba(47,74,91,0.06)]">
+                        <p className="text-sm font-semibold text-gray-800">예약 안내</p>
+                        <p className="mt-2 text-sm leading-6 text-gray-600">
+                          달력의 예약 표시는 해당 날짜에 이미 예약을 진행한 사람입니다. 수량이 모두 찬 날짜는 선택할 수 없습니다.
+                        </p>
+                      </div>
+                      <div className="rounded-3xl bg-white p-4 shadow-[0_16px_40px_rgba(47,74,91,0.06)]">
+                        <p className="text-sm font-semibold text-gray-800">선택 기간 가용 수량</p>
+                        <p className="mt-2 text-[2rem] font-bold leading-none text-[#223541]">{availableQuantityForRange}개</p>
+                        <p className="mt-2 text-xs leading-5 text-gray-500">최대 대여 기간은 {selectedItem.maxRentalDays}일입니다.</p>
+                      </div>
+                    </div>
+
+                    <div className="rounded-3xl bg-white p-4 shadow-[0_16px_40px_rgba(47,74,91,0.06)]">
+                      <p className="text-sm font-semibold text-gray-800">현재 예약 일정</p>
+                      {!isLoggedIn ? (
+                        <p className="mt-2 text-sm text-gray-500">로그인 후 예약 일정을 확인할 수 있습니다.</p>
+                      ) : !canUseRentalActions ? (
+                        <p className="mt-2 text-sm text-gray-500">현재 계정은 조회 전용입니다. 리더보드 또는 회원만 예약 일정을 확인할 수 있습니다.</p>
+                      ) : scheduleError ? (
+                        <p className="mt-2 text-sm text-red-500">{scheduleError}</p>
+                      ) : loadingSchedule ? (
+                        <p className="mt-2 text-sm text-gray-500">예약 일정을 불러오는 중입니다...</p>
+                      ) : scheduleEntries.length ? (
+                        <ul className="mt-3 space-y-2 text-sm text-gray-600 xl:max-h-[18rem] xl:overflow-y-auto xl:pr-1">
+                          {scheduleEntries.map((entry) => (
+                            <li
+                              key={entry.rentalId}
+                              className="rounded-2xl border border-[#e3edf2] bg-[#f8fbfd] px-3 py-2.5"
+                            >
+                              <p className="text-sm font-medium text-gray-700">
+                                {formatDateRange(entry.startDate, entry.endDate)} · {entry.quantity}개 예약
+                              </p>
+                              {entry.reservedByName ? <p className="mt-1 text-sm font-medium text-[#355264]">예약자 {entry.reservedByName}</p> : null}
+                              <p className="mt-1 text-xs leading-5 text-gray-500">{entry.purpose || "사유 미입력"}</p>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="mt-2 text-sm text-gray-500">현재 예약된 일정이 없습니다.</p>
+                      )}
+                    </div>
                   </div>
-                  <div className="rounded-3xl bg-white p-4 shadow-[0_16px_40px_rgba(47,74,91,0.06)]">
-                    <p className="text-sm font-semibold text-gray-800">선택 기간 가용 수량</p>
-                    <p className="mt-3 text-2xl font-bold text-[#223541]">{availableQuantityForRange}개</p>
-                    <p className="mt-2 text-xs text-gray-500">최대 대여 기간은 {selectedItem.maxRentalDays}일입니다.</p>
-                  </div>
-                </div>
-
-                <div className="mt-5 rounded-3xl bg-white p-4 shadow-[0_16px_40px_rgba(47,74,91,0.06)]">
-                  <p className="text-sm font-semibold text-gray-800">현재 예약 일정</p>
-                  {!isLoggedIn ? (
-                    <p className="mt-3 text-sm text-gray-500">로그인 후 예약 일정을 확인할 수 있습니다.</p>
-                  ) : !canUseRentalActions ? (
-                    <p className="mt-3 text-sm text-gray-500">현재 계정은 조회 전용입니다. 어드민 및 두음 회원만 예약 일정을 확인할 수 있습니다.</p>
-                  ) : scheduleError ? (
-                    <p className="mt-3 text-sm text-red-500">{scheduleError}</p>
-                  ) : loadingSchedule ? (
-                    <p className="mt-3 text-sm text-gray-500">예약 일정을 불러오는 중입니다...</p>
-                  ) : scheduleEntries.length ? (
-                    <ul className="mt-3 space-y-2 text-sm text-gray-600">
-                      {scheduleEntries.map((entry) => (
-                        <li
-                          key={entry.rentalId}
-                          className="rounded-2xl border border-[#e3edf2] bg-[#f8fbfd] px-3 py-3"
-                        >
-                          <p className="text-sm font-medium text-gray-700">
-                            {formatDateRange(entry.startDate, entry.endDate)} · {entry.quantity}개 예약
-                          </p>
-                          {entry.reservedByName ? <p className="mt-1 text-sm font-medium text-[#355264]">예약자 {entry.reservedByName}</p> : null}
-                          <p className="mt-1 text-sm text-gray-500">{entry.purpose || "사유 미입력"}</p>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="mt-3 text-sm text-gray-500">현재 예약된 일정이 없습니다.</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="p-6">
-                <div className="rounded-3xl bg-white p-5 shadow-[0_16px_40px_rgba(47,74,91,0.06)]">
-                  <p className="text-sm font-semibold text-gray-800">물품 설명</p>
-                  <p className="mt-3 text-sm leading-6 text-gray-600">
-                    {selectedItem.description || "물품 설명이 아직 등록되지 않았습니다."}
-                  </p>
                 </div>
 
                 <div className="mt-5 rounded-3xl bg-white p-5 shadow-[0_16px_40px_rgba(47,74,91,0.06)]">
