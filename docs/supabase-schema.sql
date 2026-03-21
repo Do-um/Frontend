@@ -239,6 +239,20 @@ end
 $$;
 
 do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'rentals'
+      and column_name = 'item_id'
+  ) then
+    execute 'alter table public.rentals alter column item_id drop not null';
+  end if;
+end
+$$;
+
+do $$
 declare
   user_id_type text;
 begin
