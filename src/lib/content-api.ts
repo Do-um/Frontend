@@ -468,6 +468,17 @@ function throwIfError(error: { message: string } | null, fallbackMessage: string
   }
 }
 
+function isAccessControlErrorMessage(message: string | null | undefined) {
+  const normalizedMessage = message?.toLowerCase().trim() ?? ""
+
+  return (
+    normalizedMessage.includes("permission denied") ||
+    normalizedMessage.includes("row-level security") ||
+    normalizedMessage.includes("supabase 테이블 권한") ||
+    normalizedMessage.includes("rls 정책")
+  )
+}
+
 function splitLines(value: string | null | undefined) {
   if (!value) {
     return []
@@ -672,14 +683,16 @@ function mapStaff(row: StaffRow) {
   } satisfies StaffItem
 }
 
-function mapRentalItem(row: RentalItemRow, rentals: RentalRow[]) {
+function mapRentalItem(row: RentalItemRow, rentals: RentalRow[] | null) {
+  const availableQuantity = rentals ? getCurrentAvailableQuantity(row, rentals) : Math.max(row.available_quantity, 0)
+
   return {
     itemId: row.id,
     name: row.name,
     category: row.category,
     description: row.description,
     totalQuantity: row.total_quantity,
-    availableQuantity: getCurrentAvailableQuantity(row, rentals),
+    availableQuantity,
     itemImage: row.item_image,
     maxRentalDays: row.max_rental_days,
     status: row.status,
@@ -922,9 +935,18 @@ export async function fetchRentalItems() {
   throwIfError(error, "대여 물품 정보를 불러오지 못했습니다.")
 
   const rows = (data as RentalItemRow[]) ?? []
-  const rentals = await fetchRentalRowsByItemIds(rows.map((row) => row.id))
+  try {
+    const rentals = await fetchRentalRowsByItemIds(rows.map((row) => row.id))
 
-  return rows.map((row) => mapRentalItem(row, rentals.filter((rental) => rental.rental_item_id === row.id)))
+    return rows.map((row) => mapRentalItem(row, rentals.filter((rental) => rental.rental_item_id === row.id)))
+  } catch (error) {
+    if (!isAccessControlErrorMessage(error instanceof Error ? error.message : null)) {
+      throw error
+    }
+
+    // Guests may not have SELECT access to rentals; fall back to the synced item count.
+    return rows.map((row) => mapRentalItem(row, null))
+  }
 }
 
 export async function fetchManagedUsers(_token = getStoredAccessToken()) {
