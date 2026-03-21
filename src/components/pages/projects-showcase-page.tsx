@@ -298,11 +298,11 @@ export function ProjectsShowcasePage() {
               </div>
               <p className="mt-8 inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/80 px-4 py-2 text-xs font-semibold tracking-[0.22em] text-[#6a7d88] uppercase">
                 <Sparkles className="size-3.5" />
-                Project Showcase
+                Project Archive
               </p>
               <h1 className="mt-6 text-4xl font-black tracking-tight text-black sm:text-5xl">Our Projects</h1>
               <p className="mt-4 text-base leading-7 text-[#677680] sm:text-lg">
-                Turning real-world challenges into projects—and bringing them back to education.
+                What can't we do?
               </p>
             </section>
 

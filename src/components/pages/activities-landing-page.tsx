@@ -228,7 +228,7 @@ export function ActivitiesLandingPage({
   mode = "all",
   archiveLabel = "Activity Archive",
   heroTitle = "Our Activity",
-  heroDescription = "What we’ve done, what’s next",
+  heroDescription = "Fun, Value, Learning = Together",
   sectionEyebrow = "DO,UM STORYBOARD",
   sectionTitle = "활동 기록",
   emptyTitle = "등록된 활동이 없습니다.",
@@ -581,22 +581,6 @@ export function ActivitiesLandingPage({
                         label="Location"
                         value={selectedActivity.location ?? "활동 장소 정보 없음"}
                       />
-                    </div>
-
-                    <div className="mt-8 rounded-[28px] border border-[#dae6eb] bg-white/78 p-5 shadow-[0_16px_40px_rgba(47,74,91,0.06)]">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7b8f99]">
-                        기록 메타데이터
-                      </p>
-                      <div className="mt-4 space-y-3 text-sm text-[#4f6470]">
-                        <div className="flex items-center justify-between gap-3 border-b border-[#edf1f3] pb-3">
-                          <span>등록일</span>
-                          <span className="font-medium text-[#223541]">{formatDate(selectedActivity.createdAt)}</span>
-                        </div>
-                        <div className="flex items-center justify-between gap-3">
-                          <span>최근 수정일</span>
-                          <span className="font-medium text-[#223541]">{formatDate(selectedActivity.updatedAt)}</span>
-                        </div>
-                      </div>
                     </div>
 
                     {selectedActivity.participantNames.length ? (

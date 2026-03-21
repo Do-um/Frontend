@@ -596,11 +596,11 @@ export default function RentalPage() {
           </div>
           <p className="mt-8 inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#6a7d88]">
             <Sparkles className="size-3.5" />
-            Rental Archive
+            Rental
           </p>
           <h1 className="mt-6 text-4xl font-black tracking-tight text-black sm:text-5xl">물품 대여</h1>
           <p className="mt-4 max-w-3xl text-base text-[#677680] sm:text-lg">
-            물품 목록과 상세 조회는 누구나 가능하고, 예약 일정과 실제 대여는 로그인된 두음 회원 및 관리자 기준으로 제공합니다.
+            동아리 내 대여 가능 물품 목록 신청 후 사용
           </p>
         </section>
 

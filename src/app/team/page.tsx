@@ -199,7 +199,7 @@ export default function TeamPage() {
             GROW TO GIVE
           </h1>
           <p className="text-[1.4rem] text-[#6f6f6f] sm:text-[1.9rem]">
-            Introduction of Do,um team members
+            Do,um 운영진 소개
           </p>
           {isAdmin ? (
             <Button
