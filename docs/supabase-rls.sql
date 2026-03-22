@@ -128,9 +128,9 @@ grant usage, select on all sequences in schema public to authenticated;
 
 do $$
 declare
-  table_name text;
+  v_table_name text;
 begin
-  foreach table_name in array array[
+  foreach v_table_name in array array[
     'introduce',
     'introduce_activity_image',
     'projects',
@@ -148,24 +148,24 @@ begin
       select 1
       from information_schema.tables as t
       where t.table_schema = 'public'
-        and t.table_name = table_name
+        and t.table_name = v_table_name
     ) then
-      execute format('grant select on table public.%I to anon, authenticated', table_name);
-      execute format('grant insert, update, delete on table public.%I to authenticated', table_name);
-      execute format('alter table public.%I enable row level security', table_name);
+      execute format('grant select on table public.%I to anon, authenticated', v_table_name);
+      execute format('grant insert, update, delete on table public.%I to authenticated', v_table_name);
+      execute format('alter table public.%I enable row level security', v_table_name);
 
-      execute format('drop policy if exists %I on public.%I', table_name || ' public read', table_name);
+      execute format('drop policy if exists %I on public.%I', v_table_name || ' public read', v_table_name);
       execute format(
         'create policy %I on public.%I for select to anon, authenticated using (true)',
-        table_name || ' public read',
-        table_name
+        v_table_name || ' public read',
+        v_table_name
       );
 
-      execute format('drop policy if exists %I on public.%I', table_name || ' admin write', table_name);
+      execute format('drop policy if exists %I on public.%I', v_table_name || ' admin write', v_table_name);
       execute format(
         'create policy %I on public.%I for all to authenticated using (public.is_admin()) with check (public.is_admin())',
-        table_name || ' admin write',
-        table_name
+        v_table_name || ' admin write',
+        v_table_name
       );
     end if;
   end loop;
