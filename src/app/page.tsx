@@ -338,17 +338,17 @@ export default function Home() {
                   {programs.map((program) => (
                     <div
                       key={program.id}
-                      className="self-start rounded-[24px] border border-[#cfe2f2] bg-[linear-gradient(180deg,#edf5fc_0%,#e6f0f8_100%)] p-5 shadow-[0_10px_26px_rgba(87,122,153,0.12)]"
+                      className="h-[13.5rem] rounded-[24px] border border-[#cfe2f2] bg-[linear-gradient(180deg,#edf5fc_0%,#e6f0f8_100%)] p-5 shadow-[0_10px_26px_rgba(87,122,153,0.12)]"
                     >
-                      <div className="flex items-start justify-between gap-3">
+                      <div className="flex h-full items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
-                          <p className="max-w-[18ch] text-[1.05rem] font-bold leading-[1.4] tracking-[-0.02em] text-[#1c2a36] [text-wrap:balance]">
+                          <p className="max-w-[18ch] min-h-[3rem] overflow-hidden text-[1.05rem] font-bold leading-[1.4] tracking-[-0.02em] text-[#1c2a36] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [text-wrap:balance]">
                             {program.title}
                           </p>
                           <MarkdownContent
                             content={program.description}
                             compact
-                            className="mt-3 max-w-[34ch] max-h-[7rem] overflow-hidden text-[0.95rem] leading-7 text-[#52626d] [text-wrap:pretty]"
+                            className="mt-3 h-[7rem] max-w-[34ch] overflow-hidden text-[0.95rem] leading-7 text-[#52626d] [text-wrap:pretty]"
                           />
                         </div>
                         {isAdmin ? (
