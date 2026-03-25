@@ -109,6 +109,7 @@ export type RentalItem = {
   description: string | null
   totalQuantity: number
   availableQuantity: number
+  activeBorrowerNames: string[]
   itemImage: string | null
   maxRentalDays: number
   status: string
@@ -397,6 +398,20 @@ type ManagedUserRow = {
   updated_at: string
 }
 
+type ActiveRenterByItemRow = {
+  rental_item_id: number
+  reserved_by_name: string | null
+}
+
+type RentalScheduleWithUserNameRow = {
+  rental_id: number
+  quantity: number
+  start_date: string
+  end_date: string
+  purpose: string | null
+  reserved_by_name: string | null
+}
+
 const defaultClubContent: ClubContent = {
   introTitle: "",
   introLead: "",
@@ -480,6 +495,22 @@ function isAccessControlErrorMessage(message: string | null | undefined) {
   )
 }
 
+function isMissingRpcFunctionMessage(message: string | null | undefined, functionName: string) {
+  const normalizedMessage = message?.toLowerCase().trim() ?? ""
+  const normalizedFunctionName = functionName.toLowerCase()
+
+  if (!normalizedMessage.includes(normalizedFunctionName)) {
+    return false
+  }
+
+  return (
+    normalizedMessage.includes("does not exist") ||
+    normalizedMessage.includes("schema cache") ||
+    normalizedMessage.includes("could not find") ||
+    normalizedMessage.includes("function")
+  )
+}
+
 function splitLines(value: string | null | undefined) {
   if (!value) {
     return []
@@ -501,6 +532,10 @@ function joinLines(values: string[]) {
 function trimOrNull(value: string | null | undefined) {
   const trimmed = value?.trim()
   return trimmed ? trimmed : null
+}
+
+function uniqueNames(values: Array<string | null | undefined>) {
+  return Array.from(new Set(values.map((value) => value?.trim()).filter(Boolean) as string[]))
 }
 
 function createRandomId() {
@@ -727,7 +762,7 @@ function mapStaff(row: StaffRow) {
   } satisfies StaffItem
 }
 
-function mapRentalItem(row: RentalItemRow, rentals: RentalRow[] | null) {
+function mapRentalItem(row: RentalItemRow, rentals: RentalRow[] | null, activeBorrowerNames: string[] = []) {
   const availableQuantity = rentals ? getCurrentAvailableQuantity(row, rentals) : Math.max(row.available_quantity, 0)
 
   return {
@@ -737,6 +772,7 @@ function mapRentalItem(row: RentalItemRow, rentals: RentalRow[] | null) {
     description: row.description,
     totalQuantity: row.total_quantity,
     availableQuantity,
+    activeBorrowerNames,
     itemImage: row.item_image,
     maxRentalDays: row.max_rental_days,
     status: row.status,
@@ -940,6 +976,27 @@ async function fetchRentalRowById(rentalId: number) {
   return data as RentalRow
 }
 
+async function fetchActiveRenterNamesByItemIds(itemIds: number[]) {
+  if (!itemIds.length) {
+    return new Map<number, string[]>()
+  }
+
+  const { data, error } = await getSupabase().rpc("get_active_renters_by_item_ids", {
+    target_item_ids: itemIds,
+  })
+
+  throwIfError(error, "대여자 정보를 불러오지 못했습니다.")
+
+  const namesByItem = new Map<number, string[]>()
+
+  ;((data as ActiveRenterByItemRow[]) ?? []).forEach((row) => {
+    const currentNames = namesByItem.get(row.rental_item_id) ?? []
+    namesByItem.set(row.rental_item_id, uniqueNames([...currentNames, row.reserved_by_name]))
+  })
+
+  return namesByItem
+}
+
 async function syncRentalItemAvailableQuantity(itemId: number) {
   const { data: item, error: itemError } = await getSupabase()
     .from("rental_items")
@@ -1094,15 +1151,35 @@ export async function fetchRentalItems() {
   const rows = (data as RentalItemRow[]) ?? []
   try {
     const rentals = await fetchRentalRowsByItemIds(rows.map((row) => row.id))
+    let borrowerNamesByItem = new Map<number, string[]>()
 
-    return rows.map((row) => mapRentalItem(row, rentals.filter((rental) => rental.rental_item_id === row.id)))
+    try {
+      borrowerNamesByItem = await fetchActiveRenterNamesByItemIds(rows.map((row) => row.id))
+    } catch (borrowerError) {
+      const message = borrowerError instanceof Error ? borrowerError.message : null
+
+      if (
+        !isAccessControlErrorMessage(message) &&
+        !isMissingRpcFunctionMessage(message, "get_active_renters_by_item_ids")
+      ) {
+        throw borrowerError
+      }
+    }
+
+    return rows.map((row) =>
+      mapRentalItem(
+        row,
+        rentals.filter((rental) => rental.rental_item_id === row.id),
+        borrowerNamesByItem.get(row.id) ?? [],
+      ),
+    )
   } catch (error) {
     if (!isAccessControlErrorMessage(error instanceof Error ? error.message : null)) {
       throw error
     }
 
     // Guests may not have SELECT access to rentals; fall back to the synced item count.
-    return rows.map((row) => mapRentalItem(row, null))
+    return rows.map((row) => mapRentalItem(row, null, []))
   }
 }
 
@@ -1165,6 +1242,32 @@ export async function fetchMyRentalHistory(_token = getStoredAccessToken()) {
 
 export async function fetchRentalSchedule(itemId: number) {
   await requireRentalUser()
+
+  try {
+    const { data, error } = await getSupabase().rpc("get_rental_schedule_with_user_names", {
+      target_item_id: itemId,
+    })
+
+    throwIfError(error, "예약 일정을 불러오지 못했습니다.")
+
+    return ((data as RentalScheduleWithUserNameRow[]) ?? []).map((rental) => ({
+      rentalId: rental.rental_id,
+      quantity: rental.quantity,
+      startDate: rental.start_date,
+      endDate: rental.end_date,
+      purpose: rental.purpose,
+      reservedByName: rental.reserved_by_name,
+    }))
+  } catch (error) {
+    if (
+      !isMissingRpcFunctionMessage(
+        error instanceof Error ? error.message : null,
+        "get_rental_schedule_with_user_names",
+      )
+    ) {
+      throw error
+    }
+  }
 
   const { data, error } = await getSupabase()
     .from("rentals")
@@ -1688,6 +1791,17 @@ export async function updateManagedUserRole(userId: number, role: NormalizedUser
 
   throwIfError(error, "권한을 변경하지 못했습니다.")
   return mapManagedUser(data as ManagedUserRow)
+}
+
+export async function deleteManagedUser(userId: number, _token = getStoredAccessToken()) {
+  const currentUser = await requireAdminUser()
+
+  if (currentUser.id === userId) {
+    throw new Error("본인 계정은 이 페이지에서 삭제할 수 없습니다.")
+  }
+
+  const { error } = await getSupabase().from("users").delete().eq("id", userId)
+  throwIfError(error, "회원을 삭제하지 못했습니다.")
 }
 
 export async function createClubProgram(payload: ClubProgramWritePayload, _token = getStoredAccessToken()) {

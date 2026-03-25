@@ -107,6 +107,18 @@ function buildReservationLabel(names: string[]) {
   return `${firstName}+${names.length - 1}`
 }
 
+function buildBorrowerSummary(names: string[]) {
+  if (!names.length) {
+    return null
+  }
+
+  if (names.length === 1) {
+    return names[0]
+  }
+
+  return `${names[0]} 외 ${names.length - 1}명`
+}
+
 function RentalScheduleDayButton({
   className,
   children,
@@ -760,6 +772,11 @@ export default function RentalPage() {
                         <span className="rounded-full bg-[#f1f6f9] px-3 py-1.5">
                           최대 {item.maxRentalDays}일
                         </span>
+                        {item.activeBorrowerNames.length ? (
+                          <span className="rounded-full bg-[#fff4f1] px-3 py-1.5 text-[#9a5a43]">
+                            대여자 {buildBorrowerSummary(item.activeBorrowerNames)}
+                          </span>
+                        ) : null}
                       </div>
                     </div>
                   </article>
@@ -813,6 +830,11 @@ export default function RentalPage() {
                         <span className="rounded-full bg-[#f1f6f9] px-3 py-1.5">{selectedItem.category}</span>
                         <span className="rounded-full bg-[#f1f6f9] px-3 py-1.5">총 {selectedItem.totalQuantity}개</span>
                         <span className="rounded-full bg-[#f1f6f9] px-3 py-1.5">최대 {selectedItem.maxRentalDays}일</span>
+                        {selectedItem.activeBorrowerNames.length ? (
+                          <span className="rounded-full bg-[#fff4f1] px-3 py-1.5 text-[#9a5a43]">
+                            현재 대여자 {buildBorrowerSummary(selectedItem.activeBorrowerNames)}
+                          </span>
+                        ) : null}
                       </div>
                     </div>
 
@@ -881,6 +903,11 @@ export default function RentalPage() {
 
                     <div className="rounded-3xl bg-white p-4 shadow-[0_16px_40px_rgba(47,74,91,0.06)]">
                       <p className="text-sm font-semibold text-gray-800">현재 예약 일정</p>
+                      {selectedItem.activeBorrowerNames.length ? (
+                        <p className="mt-2 text-sm text-[#355264]">
+                          현재 대여자 {selectedItem.activeBorrowerNames.join(", ")}
+                        </p>
+                      ) : null}
                       {!isLoggedIn ? (
                         <p className="mt-2 text-sm text-gray-500">로그인 후 예약 일정을 확인할 수 있습니다.</p>
                       ) : !canUseRentalActions ? (
