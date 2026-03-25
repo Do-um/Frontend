@@ -3,12 +3,12 @@
 import dynamic from "next/dynamic"
 import Image from "next/image"
 import { useEffect, useState } from "react"
-import { PencilLine } from "lucide-react"
+import { PencilLine, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { HeaderNav } from "@/components/header-nav"
 import { useAdminSession } from "@/hooks/use-admin-session"
-import { fetchRecruitContent, type RecruitContent } from "@/lib/content-api"
+import { fetchRecruitContent, updateRecruitContent, type RecruitContent, type RecruitContentWritePayload } from "@/lib/content-api"
 
 const RecruitContentEditorDialog = dynamic(
   () => import("@/components/pages/recruit-content-editor-dialog").then((module) => module.RecruitContentEditorDialog),
@@ -16,27 +16,39 @@ const RecruitContentEditorDialog = dynamic(
 )
 
 const defaultRecruitContent: RecruitContent = {
-  overviewTitle: "모집 개요",
-  overviewDescription: "2026년도 1학기 Do,um 신입 부원 모집 개요",
-  applicationPeriodTitle: "지원 기간",
-  applicationStart: "2026년 02월 23일 (월)",
-  applicationEnd: "2026년 03월 04일 (수)",
-  interviewPeriodTitle: "면접 일정",
-  interviewStart: "2026년 03월 09일 (월)",
-  interviewEnd: "2026년 03월 11일 (수)",
-  targetSectionTitle: "모집 대상",
-  targetSectionDescription: "함께 활동을 적극적으로 할 수 있는 누구나 환영합니다",
-  targetItems: [
-    "실력, 학과 무관! SW 교육에 관심이 있으신 분!",
-    "평소에 봉사활동에 관심이 있으신 분!",
-    "소융대 사람들과 다양한 교류 활동에 관심이 있으신 분!",
-    "코딩 외에도 다양한 활동을 하고 싶으신 분!",
-  ],
-  ctaTitle: "2026학년도 1학기 Do,um 신규 부원",
-  ctaButtonLabel: "지원하기",
+  overviewTitle: "",
+  overviewDescription: "",
+  applicationPeriodTitle: "",
+  applicationStart: "",
+  applicationEnd: "",
+  interviewPeriodTitle: "",
+  interviewStart: "",
+  interviewEnd: "",
+  targetSectionTitle: "",
+  targetSectionDescription: "",
+  targetItems: [],
+  ctaTitle: "",
+  ctaButtonLabel: "",
   applyUrl: "",
   createdAt: null,
   updatedAt: null,
+}
+
+const emptyRecruitContentPayload: RecruitContentWritePayload = {
+  overviewTitle: "",
+  overviewDescription: "",
+  applicationPeriodTitle: "",
+  applicationStart: "",
+  applicationEnd: "",
+  interviewPeriodTitle: "",
+  interviewStart: "",
+  interviewEnd: "",
+  targetSectionTitle: "",
+  targetSectionDescription: "",
+  targetItems: [],
+  ctaTitle: "",
+  ctaButtonLabel: "",
+  applyUrl: "",
 }
 
 export default function RecruitPage() {
@@ -44,7 +56,9 @@ export default function RecruitPage() {
   const [recruitContent, setRecruitContent] = useState<RecruitContent>(defaultRecruitContent)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const [actionError, setActionError] = useState("")
   const [editorOpen, setEditorOpen] = useState(false)
+  const [deletingContent, setDeletingContent] = useState(false)
   const { isAdmin } = useAdminSession()
 
   useEffect(() => {
@@ -62,6 +76,7 @@ export default function RecruitPage() {
     async function loadRecruitContent() {
       setLoading(true)
       setError("")
+      setActionError("")
 
       try {
         const data = await fetchRecruitContent()
@@ -110,6 +125,25 @@ export default function RecruitPage() {
     window.location.href = applyUrl
   }
 
+  async function handleRecruitContentDelete() {
+    if (!window.confirm("모집 페이지 내용을 모두 삭제할까요?")) {
+      return
+    }
+
+    setActionError("")
+    setDeletingContent(true)
+
+    try {
+      const clearedContent = await updateRecruitContent(emptyRecruitContentPayload)
+      setRecruitContent(clearedContent)
+      setEditorOpen(false)
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "모집 페이지 삭제 중 오류가 발생했습니다.")
+    } finally {
+      setDeletingContent(false)
+    }
+  }
+
   return (
     <div
       className="min-h-screen bg-cover bg-center bg-no-repeat bg-fixed"
@@ -145,21 +179,38 @@ export default function RecruitPage() {
             <div className="flex items-center justify-center gap-3">
               <h1 className="text-2xl font-bold text-gray-900">{recruitContent.overviewTitle}</h1>
               {isAdmin ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setEditorOpen(true)}
-                  className="rounded-full border-[#d7e5ee] bg-white/80 px-4 text-[#355264] hover:bg-white"
-                >
-                  <PencilLine className="size-4" />
-                  내용 수정
-                </Button>
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEditorOpen(true)}
+                    className="rounded-full border-[#d7e5ee] bg-white/80 px-4 text-[#355264] hover:bg-white"
+                  >
+                    <PencilLine className="size-4" />
+                    내용 수정
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void handleRecruitContentDelete()}
+                    disabled={deletingContent}
+                    className="rounded-full border-[#efc9c9] bg-white/80 px-4 text-[#a44a4a] hover:bg-[#fff5f5]"
+                  >
+                    <Trash2 className="size-4" />
+                    {deletingContent ? "삭제 중..." : "내용 삭제"}
+                  </Button>
+                </div>
               ) : null}
             </div>
             <p className="mt-2 text-sm text-gray-600">{recruitContent.overviewDescription}</p>
             {error ? (
               <p className="mt-4 rounded-2xl border border-[#f1cccc] bg-[#fff6f6] px-4 py-3 text-sm text-[#9a3b3b]">
                 {error}
+              </p>
+            ) : null}
+            {actionError ? (
+              <p className="mt-4 rounded-2xl border border-[#f1cccc] bg-[#fff6f6] px-4 py-3 text-sm text-[#9a3b3b]">
+                {actionError}
               </p>
             ) : null}
             {loading ? <p className="mt-4 text-sm text-gray-500">모집 정보를 불러오는 중입니다...</p> : null}

@@ -14,6 +14,7 @@ import {
   PencilLine,
   Plus,
   Sparkles,
+  Trash2,
   Users,
   type LucideIcon,
 } from "lucide-react"
@@ -24,7 +25,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { useAdminSession } from "@/hooks/use-admin-session"
-import { fetchProjects, type ProjectItem } from "@/lib/content-api"
+import { deleteProject, fetchProjects, type ProjectItem } from "@/lib/content-api"
 import { resolveMediaUrl } from "@/lib/media"
 import { hasSupabaseEnv } from "@/lib/supabase"
 
@@ -78,13 +79,13 @@ function ProjectMetaItem({
   value: string
 }) {
   return (
-    <div className="rounded-2xl border border-[#d7e5ea] bg-white/82 p-4 shadow-[0_10px_30px_rgba(47,74,91,0.06)]">
-      <div className="flex items-center justify-between gap-3">
+    <div className="flex min-h-[96px] rounded-2xl border border-[#d7e5ea] bg-white/82 p-4 shadow-[0_10px_30px_rgba(47,74,91,0.06)]">
+      <div className="flex h-full w-full items-start justify-between gap-3">
         <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#7b8f99]">
           <Icon className="mt-0.5 size-3.5 shrink-0" />
           <span>{label}</span>
         </div>
-        <p className="shrink-0 whitespace-nowrap text-right text-[clamp(1rem,2vw,1.25rem)] font-semibold leading-none text-[#223541]">
+        <p className="max-w-[14rem] overflow-hidden text-right text-[clamp(1rem,2vw,1.25rem)] font-semibold leading-6 text-[#223541] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
           {value}
         </p>
       </div>
@@ -102,8 +103,8 @@ function ProjectCard({
   const galleryImages = getProjectImages(project)
 
   return (
-    <button type="button" onClick={() => onSelect(project)} className="group w-full text-left">
-      <Card className="overflow-hidden rounded-[28px] border border-white/80 bg-white/85 py-0 shadow-[0_20px_40px_rgba(37,74,91,0.08)] backdrop-blur-sm transition duration-200 group-hover:-translate-y-1 group-hover:shadow-[0_28px_60px_rgba(37,74,91,0.14)]">
+    <button type="button" onClick={() => onSelect(project)} className="group flex h-full w-full text-left">
+      <Card className="flex h-full w-full flex-col overflow-hidden rounded-[28px] border border-white/80 bg-white/85 py-0 shadow-[0_20px_40px_rgba(37,74,91,0.08)] backdrop-blur-sm transition duration-200 group-hover:-translate-y-1 group-hover:shadow-[0_28px_60px_rgba(37,74,91,0.14)]">
         <div className="relative aspect-[1.65/1] overflow-hidden bg-[linear-gradient(135deg,#dcecf2,#edf4e8)]">
           {project.thumbnailUrl ? (
             <img
@@ -132,8 +133,8 @@ function ProjectCard({
           </div>
         </div>
 
-        <div className="p-5">
-          <div className="flex flex-wrap gap-2">
+        <div className="flex flex-1 flex-col p-5">
+          <div className="flex min-h-[2rem] flex-wrap content-start gap-2">
             {project.tags.slice(0, 3).map((tag) => (
               <span
                 key={tag}
@@ -144,12 +145,16 @@ function ProjectCard({
             ))}
           </div>
 
-          <h2 className="mt-4 text-lg font-bold text-[#1f2a33]">{project.title}</h2>
-          <p className="mt-2 overflow-hidden text-sm leading-6 text-[#60717d] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
-            {project.summary}
-          </p>
+          <div className="mt-4 min-h-[6.25rem]">
+            <h2 className="overflow-hidden text-lg font-bold leading-7 text-[#1f2a33] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
+              {project.title}
+            </h2>
+            <p className="mt-2 overflow-hidden text-sm leading-6 text-[#60717d] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
+              {project.summary}
+            </p>
+          </div>
 
-          <div className="mt-5 flex flex-wrap items-center gap-2 text-xs text-[#74838c]">
+          <div className="mt-auto flex min-h-[5rem] flex-wrap content-start items-start gap-2 pt-5 text-xs text-[#74838c]">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f1f6f9] px-3 py-1.5">
               <Users className="size-3.5" />
               {project.members.length}명
@@ -190,8 +195,10 @@ export function ProjectsShowcasePage() {
   const [projects, setProjects] = useState<ProjectItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const [actionError, setActionError] = useState("")
   const [selectedProject, setSelectedProject] = useState<ProjectItem | null>(null)
   const [activeImageIndex, setActiveImageIndex] = useState(0)
+  const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null)
   const [editorState, setEditorState] = useState<{
     mode: "create" | "edit"
     project: ProjectItem | null
@@ -277,6 +284,33 @@ export function ProjectsShowcasePage() {
     setActiveImageIndex(0)
   }
 
+  async function handleProjectDelete(target: ProjectItem) {
+    if (!window.confirm(`"${target.title}" 프로젝트를 삭제할까요?`)) {
+      return
+    }
+
+    setActionError("")
+    setDeletingProjectId(target.projectId)
+
+    try {
+      await deleteProject(target.projectId)
+      setProjects((current) => current.filter((project) => project.projectId !== target.projectId))
+
+      if (selectedProject?.projectId === target.projectId) {
+        setSelectedProject(null)
+        setActiveImageIndex(0)
+      }
+
+      if (editorState?.project?.projectId === target.projectId) {
+        setEditorState(null)
+      }
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "프로젝트 삭제 중 오류가 발생했습니다.")
+    } finally {
+      setDeletingProjectId(null)
+    }
+  }
+
   return (
     <div
       className="min-h-screen bg-cover bg-center bg-no-repeat bg-fixed text-[#1f2730]"
@@ -352,6 +386,12 @@ export function ProjectsShowcasePage() {
                     `projects`, `project_images`, `project_tags`, `project_members` 테이블에 데이터가 등록되면 이 영역이 카드형 프로젝트 보드로 채워집니다.
                   </p>
                 </Card>
+              ) : null}
+
+              {!loading && !error && actionError ? (
+                <p className="rounded-2xl border border-[#f1cccc] bg-[#fff6f6] px-4 py-3 text-sm text-[#9a3b3b]">
+                  {actionError}
+                </p>
               ) : null}
 
               {!loading && !error && orderedProjects.length ? (
@@ -456,18 +496,30 @@ export function ProjectsShowcasePage() {
                         {selectedProject.title}
                       </h2>
                       {isAdmin ? (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setSelectedProject(null)
-                            setEditorState({ mode: "edit", project: selectedProject })
-                          }}
-                          className="rounded-full border-[#d7e5ee] bg-white px-4 text-[#355264] hover:bg-[#f5fbfe]"
-                        >
-                          <PencilLine className="size-4" />
-                          수정
-                        </Button>
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedProject(null)
+                              setEditorState({ mode: "edit", project: selectedProject })
+                            }}
+                            className="rounded-full border-[#d7e5ee] bg-white px-4 text-[#355264] hover:bg-[#f5fbfe]"
+                          >
+                            <PencilLine className="size-4" />
+                            수정
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => void handleProjectDelete(selectedProject)}
+                            disabled={deletingProjectId === selectedProject.projectId}
+                            className="rounded-full border-[#efc9c9] bg-white px-4 text-[#a44a4a] hover:bg-[#fff5f5]"
+                          >
+                            <Trash2 className="size-4" />
+                            {deletingProjectId === selectedProject.projectId ? "삭제 중..." : "삭제"}
+                          </Button>
+                        </div>
                       ) : null}
                     </div>
                     <p className="mt-3 text-base leading-7 text-[#60717d]">{selectedProject.summary}</p>
@@ -566,6 +618,7 @@ export function ProjectsShowcasePage() {
               }
             }}
             onSaved={(projectId) => {
+              setActionError("")
               void refreshProjects(projectId)
             }}
           />

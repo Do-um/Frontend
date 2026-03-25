@@ -3,19 +3,23 @@
 import dynamic from "next/dynamic"
 import Image from "next/image"
 import { useEffect, useMemo, useState } from "react"
-import { PencilLine, Plus } from "lucide-react"
+import { PencilLine, Plus, Trash2 } from "lucide-react"
 
 import { HeaderNav } from "@/components/header-nav"
 import { SiteFooter } from "@/components/site-footer"
 import { Button } from "@/components/ui/button"
 import { useAdminSession } from "@/hooks/use-admin-session"
 import {
+  deleteActivity,
+  deleteClubProgram,
   fetchActivities,
   fetchClubContent,
   fetchClubPrograms,
+  updateClubContent,
   type ActivityItem,
   type ClubContent,
   type ClubProgramItem,
+  type ClubContentWritePayload,
 } from "@/lib/content-api"
 import { resolveMediaUrl } from "@/lib/media"
 
@@ -33,24 +37,41 @@ const ClubProgramEditorDialog = dynamic(
 )
 
 const defaultClubContent: ClubContent = {
-  introTitle: "Do,um?",
-  introLead: "'um' 하고 망설이기 전에, 'do' 무엇이든 해보자",
-  introDescription:
-    "Do,um은 국민대학교 소프트웨어융합대학 학생들이 함께 배우고 나누기 위해 만든 교육 봉사 동아리입니다. 교내외 코딩 교육과 친목 활동, 스터디를 꾸준히 이어가고 있습니다.",
-  heroBannerImageUrl: "/hero-banner.png",
-  activitySectionTitle: "정규 활동",
-  historySectionTitle: "우리는 어떤 길을 걸어왔을까요?",
-  studyCaption: "자기개발을 위한",
-  studyTitle: "다양한 스터디와 친목활동 진행",
-  learnTitle: "Learn",
-  learnDescription: "기초부터 차근차근, 함께 배우는 스터디",
-  growTitle: "Grow",
-  growDescription: "알고리즘과 프로젝트로 쌓는 실전 역량",
-  shareTitle: "Share",
-  shareDescription: "배운 기술로 실천하는 SW 교육 봉사",
-  studyImageUrl: "/skill.png",
+  introTitle: "",
+  introLead: "",
+  introDescription: "",
+  heroBannerImageUrl: "",
+  activitySectionTitle: "",
+  historySectionTitle: "",
+  studyCaption: "",
+  studyTitle: "",
+  learnTitle: "",
+  learnDescription: "",
+  growTitle: "",
+  growDescription: "",
+  shareTitle: "",
+  shareDescription: "",
+  studyImageUrl: "",
   createdAt: null,
   updatedAt: null,
+}
+
+const emptyClubContentPayload: ClubContentWritePayload = {
+  introTitle: "",
+  introLead: "",
+  introDescription: "",
+  heroBannerImageUrl: "",
+  activitySectionTitle: "",
+  historySectionTitle: "",
+  studyCaption: "",
+  studyTitle: "",
+  learnTitle: "",
+  learnDescription: "",
+  growTitle: "",
+  growDescription: "",
+  shareTitle: "",
+  shareDescription: "",
+  studyImageUrl: "",
 }
 
 function compareActivities(left: ActivityItem, right: ActivityItem) {
@@ -66,7 +87,11 @@ export default function Home() {
   const [activities, setActivities] = useState<ActivityItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const [mutationError, setMutationError] = useState("")
   const [contentEditorOpen, setContentEditorOpen] = useState(false)
+  const [deletingProgramId, setDeletingProgramId] = useState<number | null>(null)
+  const [deletingActivityId, setDeletingActivityId] = useState<number | null>(null)
+  const [deletingClubContent, setDeletingClubContent] = useState(false)
   const [programEditorState, setProgramEditorState] = useState<{
     mode: "create" | "edit"
     program: ClubProgramItem | null
@@ -116,10 +141,11 @@ export default function Home() {
   }, [])
 
   const displayedActivities = useMemo(() => {
-    return [...activities].sort(compareActivities).slice(0, 3)
+    return activities.filter((activity) => activity.activityType === "MAIN").sort(compareActivities).slice(0, 3)
   }, [activities])
 
   function handleProgramSaved(savedProgram: ClubProgramItem) {
+    setMutationError("")
     setPrograms((current) =>
       [...current.filter((item) => item.id !== savedProgram.id), savedProgram].sort(
         (left, right) => left.sortOrder - right.sortOrder || left.id - right.id,
@@ -128,6 +154,7 @@ export default function Home() {
   }
 
   function handleActivitySaved(savedActivity: ActivityItem) {
+    setMutationError("")
     setActivities((current) => {
       const hasExisting = current.some((activity) => activity.id === savedActivity.id)
       const nextActivities = hasExisting
@@ -136,6 +163,69 @@ export default function Home() {
 
       return nextActivities.sort(compareActivities)
     })
+  }
+
+  async function handleProgramDelete(target: ClubProgramItem) {
+    if (!window.confirm(`"${target.title}" 정규 활동을 삭제할까요?`)) {
+      return
+    }
+
+    setMutationError("")
+    setDeletingProgramId(target.id)
+
+    try {
+      await deleteClubProgram(target.id)
+      setPrograms((current) => current.filter((item) => item.id !== target.id))
+
+      if (programEditorState?.program?.id === target.id) {
+        setProgramEditorState(null)
+      }
+    } catch (err) {
+      setMutationError(err instanceof Error ? err.message : "정규 활동 삭제 중 오류가 발생했습니다.")
+    } finally {
+      setDeletingProgramId(null)
+    }
+  }
+
+  async function handleActivityDelete(target: ActivityItem) {
+    if (!window.confirm(`"${target.activityId}" 히스토리를 삭제할까요?`)) {
+      return
+    }
+
+    setMutationError("")
+    setDeletingActivityId(target.id)
+
+    try {
+      await deleteActivity(target.id)
+      setActivities((current) => current.filter((item) => item.id !== target.id))
+
+      if (activityEditorState?.activity?.id === target.id) {
+        setActivityEditorState(null)
+      }
+    } catch (err) {
+      setMutationError(err instanceof Error ? err.message : "히스토리 삭제 중 오류가 발생했습니다.")
+    } finally {
+      setDeletingActivityId(null)
+    }
+  }
+
+  async function handleClubContentDelete() {
+    if (!window.confirm("메인 페이지 소개 내용을 모두 삭제할까요?")) {
+      return
+    }
+
+    setMutationError("")
+    setDeletingClubContent(true)
+
+    try {
+      const clearedContent = await updateClubContent(emptyClubContentPayload)
+      setClubContent(clearedContent)
+      setContentEditorOpen(false)
+    } catch (err) {
+      setMutationError(err instanceof Error ? err.message : "메인 페이지 소개 삭제 중 오류가 발생했습니다.")
+    } finally {
+      setDeletingClubContent(false)
+    }
   }
 
   return (
@@ -182,17 +272,35 @@ export default function Home() {
                 <p className="max-w-3xl text-sm leading-6 text-gray-600">{clubContent.introDescription}</p>
               </div>
               {isAdmin ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setContentEditorOpen(true)}
-                  className="rounded-full border-[#d7e5ee] bg-white/80 px-4 text-[#355264] hover:bg-white"
-                >
-                  <PencilLine className="size-4" />
-                  내용/이미지 수정
-                </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setContentEditorOpen(true)}
+                    className="rounded-full border-[#d7e5ee] bg-white/80 px-4 text-[#355264] hover:bg-white"
+                  >
+                    <PencilLine className="size-4" />
+                    내용/이미지 수정
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void handleClubContentDelete()}
+                    disabled={deletingClubContent}
+                    className="rounded-full border-[#efc9c9] bg-white/80 px-4 text-[#a44a4a] hover:bg-[#fff5f5]"
+                  >
+                    <Trash2 className="size-4" />
+                    {deletingClubContent ? "삭제 중..." : "내용 삭제"}
+                  </Button>
+                </div>
               ) : null}
             </div>
+
+            {mutationError ? (
+              <p className="mb-6 rounded-2xl border border-[#f1cccc] bg-[#fff6f6] px-4 py-3 text-sm text-[#9a3b3b]">
+                {mutationError}
+              </p>
+            ) : null}
 
             <div id="activities" className="mb-12">
               <div className="mb-6 flex items-center justify-between gap-4">
@@ -221,22 +329,35 @@ export default function Home() {
                   {programs.map((program) => (
                     <div
                       key={program.id}
-                      className="rounded-2xl border border-[#D0E4F5] bg-[#EAF4FB] p-4 shadow-sm"
+                      className="flex h-full flex-col rounded-2xl border border-[#D0E4F5] bg-[#EAF4FB] p-4 shadow-sm"
                     >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
+                      <div className="flex min-h-[132px] items-start justify-between gap-3">
+                        <div className="min-w-0">
                           <p className="text-sm font-bold text-gray-900">{program.title}</p>
-                          <p className="mt-1 text-xs leading-5 text-gray-600">{program.description}</p>
+                          <p className="mt-1 overflow-hidden text-xs leading-5 text-gray-600 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3]">
+                            {program.description}
+                          </p>
                         </div>
                         {isAdmin ? (
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            onClick={() => setProgramEditorState({ mode: "edit", program })}
-                            className="rounded-full text-[#355264] hover:bg-white/70"
-                          >
-                            <PencilLine className="size-4" />
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              onClick={() => setProgramEditorState({ mode: "edit", program })}
+                              className="rounded-full text-[#355264] hover:bg-white/70"
+                            >
+                              <PencilLine className="size-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              onClick={() => void handleProgramDelete(program)}
+                              disabled={deletingProgramId === program.id}
+                              className="rounded-full text-[#a44a4a] hover:bg-white/70"
+                            >
+                              <Trash2 className="size-4" />
+                            </Button>
+                          </div>
                         ) : null}
                       </div>
                     </div>
@@ -284,14 +405,25 @@ export default function Home() {
                       <div className="flex items-start justify-between gap-3">
                         <p className="text-sm font-semibold text-gray-900">{activity.activityId}</p>
                         {isAdmin ? (
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            onClick={() => setActivityEditorState({ mode: "edit", activity })}
-                            className="rounded-full text-[#355264] hover:bg-white/70"
-                          >
-                            <PencilLine className="size-4" />
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              onClick={() => setActivityEditorState({ mode: "edit", activity })}
+                              className="rounded-full text-[#355264] hover:bg-white/70"
+                            >
+                              <PencilLine className="size-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              onClick={() => void handleActivityDelete(activity)}
+                              disabled={deletingActivityId === activity.id}
+                              className="rounded-full text-[#a44a4a] hover:bg-white/70"
+                            >
+                              <Trash2 className="size-4" />
+                            </Button>
+                          </div>
                         ) : null}
                       </div>
                       <p className="mt-2 max-w-xl text-sm leading-6 text-gray-600">{activity.description}</p>
@@ -366,6 +498,7 @@ export default function Home() {
         open={Boolean(activityEditorState)}
         mode={activityEditorState?.mode ?? "create"}
         activity={activityEditorState?.activity}
+        activityType="MAIN"
         onOpenChange={(open) => {
           if (!open) {
             setActivityEditorState(null)

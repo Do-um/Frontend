@@ -1,3 +1,5 @@
+import { resolveMediaUrl } from "@/lib/media"
+
 export type LocalImageAsset = {
   id: string
   previewUrl: string
@@ -17,7 +19,7 @@ function makeId() {
 export function createAssetsFromUrls(urls: string[]) {
   return urls.map<LocalImageAsset>((url, index) => ({
     id: `persisted-${index}-${url}`,
-    previewUrl: url,
+    previewUrl: resolveMediaUrl(url) ?? url,
     file: null,
     persistedUrl: url,
     name: url.split("/").pop() || `image-${index + 1}`,

@@ -12,6 +12,7 @@ import {
   PencilLine,
   Plus,
   Sparkles,
+  Trash2,
   Users,
   type LucideIcon,
 } from "lucide-react"
@@ -23,7 +24,8 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { useAdminSession } from "@/hooks/use-admin-session"
-import { fetchActivities, type ActivityItem } from "@/lib/content-api"
+import { deleteActivity, fetchActivities, type ActivityItem } from "@/lib/content-api"
+import { resolveMediaUrl } from "@/lib/media"
 import { hasSupabaseEnv } from "@/lib/supabase"
 
 const PAGE_SIZE = 6
@@ -45,10 +47,21 @@ function formatDate(value?: string | null) {
     return "미정"
   }
 
-  const normalized = value.includes("T") ? value : `${value}T00:00:00`
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return "미정"
+  }
+
+  // Preserve free-form ranges like "2024 ~ 2025" instead of forcing date parsing.
+  const isoDatePattern = /^\d{4}-\d{2}-\d{2}$/
+  if (!isoDatePattern.test(trimmed) && !trimmed.includes("T")) {
+    return trimmed
+  }
+
+  const normalized = trimmed.includes("T") ? trimmed : `${trimmed}T00:00:00`
   const date = new Date(normalized)
   if (Number.isNaN(date.getTime())) {
-    return "날짜 미정"
+    return trimmed
   }
 
   return new Intl.DateTimeFormat("ko-KR", {
@@ -67,13 +80,21 @@ function getActivityTimeValue(activity: ActivityItem) {
   return Number.isNaN(timestamp) ? 0 : timestamp
 }
 
+function formatParticipantNames(names: string[], maxVisible = 3) {
+  if (!names.length) {
+    return ""
+  }
+
+  if (names.length <= maxVisible) {
+    return names.join(", ")
+  }
+
+  return `${names.slice(0, maxVisible).join(", ")} 외 ${names.length - maxVisible}명`
+}
+
 function formatParticipantSummary(activity: ActivityItem) {
   if (activity.participantNames.length) {
-    if (activity.participantNames.length === 1) {
-      return activity.participantNames[0]
-    }
-
-    return `${activity.participantNames[0]} 외 ${activity.participantNames.length - 1}명`
+    return formatParticipantNames(activity.participantNames)
   }
 
   if (activity.participantCount !== null && activity.participantCount !== undefined) {
@@ -89,28 +110,23 @@ function inferActivityLink(activityId: string) {
   if (normalized.includes("프로젝트") || normalized.includes("project")) {
     return { href: "/activities/projects", label: "프로젝트" }
   }
-  if (normalized.includes("스터디") || normalized.includes("study")) {
+  return { href: "/activities", label: "주요활동" }
+}
+
+function inferActivityLinkByType(activity: ActivityItem) {
+  if (activity.activityType === "STUDY") {
     return { href: "/activities/study", label: "스터디" }
   }
-  return { href: "/activities", label: "주요활동" }
+
+  return inferActivityLink(activity.activityId)
 }
 
 function matchesArchiveMode(activity: ActivityItem, mode: ActivityArchiveMode) {
   if (mode === "all") {
-    return true
+    return activity.activityType === "MAIN"
   }
 
-  const searchableText = [
-    activity.activityId,
-    activity.description,
-    activity.location,
-    ...activity.participantNames,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase()
-
-  return searchableText.includes("스터디") || searchableText.includes("study")
+  return activity.activityType === "STUDY"
 }
 
 function ActivityMetaItem({
@@ -123,13 +139,15 @@ function ActivityMetaItem({
   value: string
 }) {
   return (
-    <div className="rounded-2xl border border-[#d7e5ea] bg-white/82 p-4 shadow-[0_10px_30px_rgba(47,74,91,0.06)]">
-      <div className="flex items-start justify-between gap-4">
+    <div className="flex min-h-[96px] rounded-2xl border border-[#d7e5ea] bg-white/82 p-4 shadow-[0_10px_30px_rgba(47,74,91,0.06)]">
+      <div className="flex h-full w-full items-start justify-between gap-4">
         <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#7b8f99]">
           <Icon className="mt-0.5 size-3.5 shrink-0" />
           <span>{label}</span>
         </div>
-        <p className="max-w-[14rem] text-right text-base font-semibold leading-6 text-[#223541]">{value}</p>
+        <p className="max-w-[14rem] overflow-hidden text-right text-base font-semibold leading-6 text-[#223541] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
+          {value}
+        </p>
       </div>
     </div>
   )
@@ -143,15 +161,16 @@ function ActivityCard({
   onSelect: (activity: ActivityItem) => void
 }) {
   const primaryImage = activity.activityImages[0]
-  const target = inferActivityLink(activity.activityId)
+  const target = inferActivityLinkByType(activity)
+  const participantSummary = formatParticipantSummary(activity)
 
   return (
-    <button type="button" onClick={() => onSelect(activity)} className="group w-full text-left">
-      <Card className="overflow-hidden rounded-[28px] border border-white/80 bg-white/85 py-0 shadow-[0_20px_40px_rgba(37,74,91,0.08)] backdrop-blur-sm transition duration-200 group-hover:-translate-y-1 group-hover:shadow-[0_28px_60px_rgba(37,74,91,0.14)]">
+    <button type="button" onClick={() => onSelect(activity)} className="group flex h-full w-full text-left">
+      <Card className="flex h-full w-full flex-col overflow-hidden rounded-[28px] border border-white/80 bg-white/85 py-0 shadow-[0_20px_40px_rgba(37,74,91,0.08)] backdrop-blur-sm transition duration-200 group-hover:-translate-y-1 group-hover:shadow-[0_28px_60px_rgba(37,74,91,0.14)]">
         <div className="relative aspect-[1.6/1] overflow-hidden bg-[linear-gradient(135deg,#dcecf2,#edf4e8)]">
           {primaryImage ? (
             <img
-              src={primaryImage}
+              src={resolveMediaUrl(primaryImage) || ""}
               alt={activity.activityId}
               className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
             />
@@ -170,14 +189,16 @@ function ActivityCard({
         </div>
 
         <div className="flex flex-1 flex-col p-5">
-          <div className="min-w-0">
-            <h2 className="text-lg font-bold text-[#1f2a33]">{activity.activityId}</h2>
+          <div className="min-w-0 min-h-[6.25rem]">
+            <h2 className="overflow-hidden text-lg font-bold leading-7 text-[#1f2a33] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
+              {activity.activityId}
+            </h2>
             <p className="mt-2 overflow-hidden text-sm leading-6 text-[#60717d] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
               {activity.description}
             </p>
           </div>
 
-          <div className="mt-5 flex flex-wrap items-center gap-2 text-xs text-[#74838c]">
+          <div className="mt-5 flex min-h-[5rem] flex-wrap content-start items-start gap-2 text-xs text-[#74838c]">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f1f6f9] px-3 py-1.5">
               <CalendarDays className="size-3.5" />
               {formatDate(activity.activityDate ?? activity.createdAt)}
@@ -186,15 +207,15 @@ function ActivityCard({
               <Images className="size-3.5" />
               {activity.activityImages.length}장
             </span>
-            {formatParticipantSummary(activity) ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f1f6f9] px-3 py-1.5">
+            {participantSummary ? (
+              <span className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-[#f1f6f9] px-3 py-1.5">
                 <Users className="size-3.5" />
-                {formatParticipantSummary(activity)}
+                <span className="max-w-[12rem] truncate sm:max-w-[14rem]">{participantSummary}</span>
               </span>
             ) : null}
           </div>
 
-          <div className="mt-5 flex items-center justify-between gap-3 text-xs text-[#74838c]">
+          <div className="mt-auto flex items-center justify-between gap-3 pt-5 text-xs text-[#74838c]">
             <div className="flex items-center gap-1.5">
               <Clock3 className="size-3.5" />
               <span>{formatDate(activity.createdAt)}</span>
@@ -237,10 +258,12 @@ export function ActivitiesLandingPage({
   const [activities, setActivities] = useState<ActivityItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const [actionError, setActionError] = useState("")
   const [sortOrder, setSortOrder] = useState<"latest" | "oldest">("latest")
   const [page, setPage] = useState(1)
   const [selectedActivity, setSelectedActivity] = useState<ActivityItem | null>(null)
   const [activeImageIndex, setActiveImageIndex] = useState(0)
+  const [deletingActivityId, setDeletingActivityId] = useState<number | null>(null)
   const [editorState, setEditorState] = useState<{
     mode: "create" | "edit"
     activity: ActivityItem | null
@@ -298,7 +321,7 @@ export function ActivitiesLandingPage({
     }
   }, [page, totalPages])
 
-  const selectedActivityTarget = selectedActivity ? inferActivityLink(selectedActivity.activityId) : null
+  const selectedActivityTarget = selectedActivity ? inferActivityLinkByType(selectedActivity) : null
   const selectedImages = selectedActivity?.activityImages ?? []
   const activeImage = selectedImages[activeImageIndex] ?? selectedImages[0]
   function openActivityDetail(activity: ActivityItem) {
@@ -307,6 +330,7 @@ export function ActivitiesLandingPage({
   }
 
   function handleActivitySaved(savedActivity: ActivityItem) {
+    setActionError("")
     setActivities((current) => {
       const hasExisting = current.some((activity) => activity.id === savedActivity.id)
       if (!hasExisting) {
@@ -316,6 +340,33 @@ export function ActivitiesLandingPage({
       return current.map((activity) => (activity.id === savedActivity.id ? savedActivity : activity))
     })
     openActivityDetail(savedActivity)
+  }
+
+  async function handleActivityDelete(target: ActivityItem) {
+    if (!window.confirm(`"${target.activityId}" 활동을 삭제할까요?`)) {
+      return
+    }
+
+    setActionError("")
+    setDeletingActivityId(target.id)
+
+    try {
+      await deleteActivity(target.id)
+      setActivities((current) => current.filter((activity) => activity.id !== target.id))
+
+      if (selectedActivity?.id === target.id) {
+        setSelectedActivity(null)
+        setActiveImageIndex(0)
+      }
+
+      if (editorState?.activity?.id === target.id) {
+        setEditorState(null)
+      }
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "활동 삭제 중 오류가 발생했습니다.")
+    } finally {
+      setDeletingActivityId(null)
+    }
   }
 
   return (
@@ -409,6 +460,12 @@ export function ActivitiesLandingPage({
                 </Card>
               ) : null}
 
+              {!loading && !error && actionError ? (
+                <p className="rounded-2xl border border-[#f1cccc] bg-[#fff6f6] px-4 py-3 text-sm text-[#9a3b3b]">
+                  {actionError}
+                </p>
+              ) : null}
+
               {!loading && !error && currentActivities.length ? (
                 <>
                   <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
@@ -486,7 +543,7 @@ export function ActivitiesLandingPage({
                       <div className="relative overflow-hidden rounded-[28px] bg-white/65 shadow-[0_24px_60px_rgba(44,71,88,0.12)]">
                         {activeImage ? (
                           <img
-                            src={activeImage}
+                            src={resolveMediaUrl(activeImage) || ""}
                             alt={`${selectedActivity.activityId} 대표 이미지`}
                             className="h-[280px] w-full object-cover sm:h-[360px] xl:h-[520px]"
                           />
@@ -517,7 +574,7 @@ export function ActivitiesLandingPage({
                                 }`}
                               >
                                 <img
-                                  src={imageUrl}
+                                  src={resolveMediaUrl(imageUrl) || ""}
                                   alt={`${selectedActivity.activityId} 썸네일 ${index + 1}`}
                                   className="h-24 w-full object-cover sm:h-28"
                                 />
@@ -540,18 +597,30 @@ export function ActivitiesLandingPage({
                         {selectedActivity.activityId}
                       </h2>
                       {isAdmin ? (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setSelectedActivity(null)
-                            setEditorState({ mode: "edit", activity: selectedActivity })
-                          }}
-                          className="rounded-full border-[#d7e5ee] bg-white px-4 text-[#355264] hover:bg-[#f5fbfe]"
-                        >
-                          <PencilLine className="size-4" />
-                          수정
-                        </Button>
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedActivity(null)
+                              setEditorState({ mode: "edit", activity: selectedActivity })
+                            }}
+                            className="rounded-full border-[#d7e5ee] bg-white px-4 text-[#355264] hover:bg-[#f5fbfe]"
+                          >
+                            <PencilLine className="size-4" />
+                            수정
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => void handleActivityDelete(selectedActivity)}
+                            disabled={deletingActivityId === selectedActivity.id}
+                            className="rounded-full border-[#efc9c9] bg-white px-4 text-[#a44a4a] hover:bg-[#fff5f5]"
+                          >
+                            <Trash2 className="size-4" />
+                            {deletingActivityId === selectedActivity.id ? "삭제 중..." : "삭제"}
+                          </Button>
+                        </div>
                       ) : null}
                     </div>
                     <p className="mt-4 whitespace-pre-line text-sm leading-7 text-[#576a75] sm:text-base">
@@ -569,7 +638,7 @@ export function ActivitiesLandingPage({
                         label="Participants"
                         value={
                           selectedActivity.participantNames.length
-                            ? selectedActivity.participantNames.join(", ")
+                            ? formatParticipantNames(selectedActivity.participantNames)
                             : selectedActivity.participantCount !== null &&
                                 selectedActivity.participantCount !== undefined
                               ? `${selectedActivity.participantCount}명`
@@ -589,9 +658,9 @@ export function ActivitiesLandingPage({
                           참여자 목록
                         </p>
                         <div className="mt-4 flex flex-wrap gap-2">
-                          {selectedActivity.participantNames.map((name) => (
+                          {selectedActivity.participantNames.map((name, index) => (
                             <span
-                              key={name}
+                              key={`${name}-${index}`}
                               className="rounded-full bg-[#eef4f7] px-3 py-1.5 text-sm font-medium text-[#294255]"
                             >
                               {name}
@@ -624,6 +693,7 @@ export function ActivitiesLandingPage({
             open={Boolean(editorState)}
             mode={editorState?.mode ?? "create"}
             activity={editorState?.activity}
+            activityType={mode === "study" ? "STUDY" : "MAIN"}
             onOpenChange={(open) => {
               if (!open) {
                 setEditorState(null)

@@ -12,6 +12,7 @@ import {
   createActivity,
   updateActivity,
   type ActivityItem,
+  type ActivityType,
   type ActivityWritePayload,
   uploadImageFiles,
 } from "@/lib/content-api"
@@ -27,6 +28,7 @@ type ActivityEditorDialogProps = {
   open: boolean
   mode: "create" | "edit"
   activity?: ActivityItem | null
+  activityType?: ActivityType
   onOpenChange: (open: boolean) => void
   onSaved: (activity: ActivityItem) => void
 }
@@ -58,6 +60,7 @@ export function ActivityEditorDialog({
   open,
   mode,
   activity,
+  activityType = "MAIN",
   onOpenChange,
   onSaved,
 }: ActivityEditorDialogProps) {
@@ -115,6 +118,7 @@ export function ActivityEditorDialog({
 
     const payload: ActivityWritePayload = {
       activityId: form.activityId.trim(),
+      activityType: activity?.activityType ?? activityType,
       description: form.description.trim(),
       activityDate: form.activityDate || null,
       location: form.location.trim() || null,
@@ -190,11 +194,11 @@ export function ActivityEditorDialog({
                 <label className="space-y-2">
                   <span className="text-sm font-semibold text-[#243845]">활동 일자</span>
                   <Input
-                    type="date"
                     value={form.activityDate}
                     onChange={(event) =>
                       setForm((current) => ({ ...current, activityDate: event.target.value }))
                     }
+                    placeholder="2026.03.25 또는 2024 ~ 2025"
                   />
                 </label>
 

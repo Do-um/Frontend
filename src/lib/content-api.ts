@@ -2,9 +2,12 @@ import { getStoredAccessToken, normalizeUserRole, requireAdminUser, requireRenta
 import { compressImagesForUpload } from "@/lib/image-compression"
 import { getSupabaseBrowserClient, getSupabaseStorageBucket } from "@/lib/supabase"
 
+export type ActivityType = "MAIN" | "STUDY"
+
 export type ActivityItem = {
   id: number
   activityId: string
+  activityType: ActivityType
   description: string
   activityDate: string | null
   location: string | null
@@ -163,6 +166,7 @@ export type ManagedUser = {
 
 export type ActivityWritePayload = {
   activityId: string
+  activityType: ActivityType
   description: string
   activityDate: string | null
   location: string | null
@@ -241,6 +245,7 @@ type ProjectMutationResult = {
 type IntroduceRow = {
   id: number
   activity_id: string
+  activity_type: string | null
   description: string
   activity_date: string | null
   location: string | null
@@ -391,45 +396,39 @@ type ManagedUserRow = {
 }
 
 const defaultClubContent: ClubContent = {
-  introTitle: "Do,um?",
-  introLead: "'um' 하고 망설이기 전에, 'do' 무엇이든 해보자",
-  introDescription:
-    "Do,um은 국민대학교 소프트웨어융합대학 학생들이 함께 배우고 나누기 위해 만든 교육 봉사 동아리입니다. 교내외 코딩 교육과 친목 활동, 스터디를 꾸준히 이어가고 있습니다.",
-  heroBannerImageUrl: "/hero-banner.png",
-  activitySectionTitle: "정규 활동",
-  historySectionTitle: "우리는 어떤 길을 걸어왔을까요?",
-  studyCaption: "자기개발을 위한",
-  studyTitle: "다양한 스터디와 친목활동 진행",
-  learnTitle: "Learn",
-  learnDescription: "기초부터 차근차근, 함께 배우는 스터디",
-  growTitle: "Grow",
-  growDescription: "알고리즘과 프로젝트로 쌓는 실전 역량",
-  shareTitle: "Share",
-  shareDescription: "배운 기술로 실천하는 SW 교육 봉사",
-  studyImageUrl: "/skill.png",
+  introTitle: "",
+  introLead: "",
+  introDescription: "",
+  heroBannerImageUrl: "",
+  activitySectionTitle: "",
+  historySectionTitle: "",
+  studyCaption: "",
+  studyTitle: "",
+  learnTitle: "",
+  learnDescription: "",
+  growTitle: "",
+  growDescription: "",
+  shareTitle: "",
+  shareDescription: "",
+  studyImageUrl: "",
   createdAt: null,
   updatedAt: null,
 }
 
 const defaultRecruitContent: RecruitContent = {
-  overviewTitle: "모집 개요",
-  overviewDescription: "2026년도 1학기 Do,um 신입 부원 모집 개요",
-  applicationPeriodTitle: "지원 기간",
-  applicationStart: "2026년 02월 23일 (월)",
-  applicationEnd: "2026년 03월 04일 (수)",
-  interviewPeriodTitle: "면접 일정",
-  interviewStart: "2026년 03월 09일 (월)",
-  interviewEnd: "2026년 03월 11일 (수)",
-  targetSectionTitle: "모집 대상",
-  targetSectionDescription: "함께 활동을 적극적으로 할 수 있는 누구나 환영합니다",
-  targetItems: [
-    "실력, 학과 무관! SW 교육에 관심이 있으신 분!",
-    "평소에 봉사활동에 관심이 있으신 분!",
-    "소융대 사람들과 다양한 교류 활동에 관심이 있으신 분!",
-    "코딩 외에도 다양한 활동을 하고 싶으신 분!",
-  ],
-  ctaTitle: "2026학년도 1학기 Do,um 신규 부원",
-  ctaButtonLabel: "지원하기",
+  overviewTitle: "",
+  overviewDescription: "",
+  applicationPeriodTitle: "",
+  applicationStart: "",
+  applicationEnd: "",
+  interviewPeriodTitle: "",
+  interviewStart: "",
+  interviewEnd: "",
+  targetSectionTitle: "",
+  targetSectionDescription: "",
+  targetItems: [],
+  ctaTitle: "",
+  ctaButtonLabel: "",
   applyUrl: "",
   createdAt: null,
   updatedAt: null,
@@ -514,6 +513,10 @@ function createProjectId() {
   return `prj_${createRandomId().replace(/-/g, "")}`
 }
 
+function normalizeActivityType(value: string | null | undefined): ActivityType {
+  return value === "STUDY" ? "STUDY" : "MAIN"
+}
+
 function todayKey() {
   return new Date().toISOString().slice(0, 10)
 }
@@ -572,6 +575,7 @@ function mapActivity(row: IntroduceRow, imageRows: IntroduceActivityImageRow[]) 
   return {
     id: row.id,
     activityId: row.activity_id,
+    activityType: normalizeActivityType(row.activity_type),
     description: row.description,
     activityDate: row.activity_date,
     location: row.location,
@@ -842,7 +846,7 @@ async function upsertSingletonRow<T>(
 export async function fetchActivities() {
   const { data, error } = await getSupabase()
     .from("introduce")
-    .select("id, activity_id, description, activity_date, location, participant_count, participant_names, created_at, updated_at")
+    .select("id, activity_id, activity_type, description, activity_date, location, participant_count, participant_names, created_at, updated_at")
     .order("created_at", { ascending: false })
 
   throwIfError(error, "활동 데이터를 불러오지 못했습니다.")
@@ -888,7 +892,11 @@ export async function fetchClubContent() {
     .maybeSingle()
 
   throwIfError(error, "동아리 소개 정보를 불러오지 못했습니다.")
-  return data ? mapClubContent(data as ClubContentRow) : defaultClubContent
+  if (!data) {
+    throw new Error("Supabase `club_content` 테이블에 메인 페이지 데이터가 없습니다.")
+  }
+
+  return mapClubContent(data as ClubContentRow)
 }
 
 export async function fetchClubPrograms() {
@@ -913,7 +921,11 @@ export async function fetchRecruitContent() {
     .maybeSingle()
 
   throwIfError(error, "모집 페이지 정보를 불러오지 못했습니다.")
-  return data ? mapRecruitContent(data as RecruitContentRow) : defaultRecruitContent
+  if (!data) {
+    throw new Error("Supabase `club_recruit_content` 테이블에 모집 페이지 데이터가 없습니다.")
+  }
+
+  return mapRecruitContent(data as RecruitContentRow)
 }
 
 export async function fetchStaff() {
@@ -1036,13 +1048,14 @@ export async function createActivity(payload: ActivityWritePayload, _token = get
     .from("introduce")
     .insert({
       activity_id: payload.activityId.trim(),
+      activity_type: payload.activityType,
       description: payload.description.trim(),
       activity_date: payload.activityDate,
       location: trimOrNull(payload.location),
       participant_names: joinLines(payload.participantNames),
       participant_count: payload.participantNames.length || payload.participantCount,
     })
-    .select("id, activity_id, description, activity_date, location, participant_count, participant_names, created_at, updated_at")
+    .select("id, activity_id, activity_type, description, activity_date, location, participant_count, participant_names, created_at, updated_at")
     .single()
 
   throwIfError(error, "활동을 저장하지 못했습니다.")
@@ -1092,6 +1105,7 @@ export async function updateActivity(activityId: number, payload: ActivityWriteP
     .from("introduce")
     .update({
       activity_id: payload.activityId.trim(),
+      activity_type: payload.activityType,
       description: payload.description.trim(),
       activity_date: payload.activityDate,
       location: trimOrNull(payload.location),
@@ -1099,7 +1113,7 @@ export async function updateActivity(activityId: number, payload: ActivityWriteP
       participant_count: payload.participantNames.length || payload.participantCount,
     })
     .eq("id", activityId)
-    .select("id, activity_id, description, activity_date, location, participant_count, participant_names, created_at, updated_at")
+    .select("id, activity_id, activity_type, description, activity_date, location, participant_count, participant_names, created_at, updated_at")
     .single()
 
   throwIfError(error, "활동을 수정하지 못했습니다.")
@@ -1119,6 +1133,16 @@ export async function updateActivity(activityId: number, payload: ActivityWriteP
   }
 
   return mapActivity(data as IntroduceRow, await fetchActivityImageRows([activityId]))
+}
+
+export async function deleteActivity(activityId: number, _token = getStoredAccessToken()) {
+  await requireAdminUser()
+
+  const { error: deleteImageError } = await getSupabase().from("introduce_activity_image").delete().eq("introduce_id", activityId)
+  throwIfError(deleteImageError, "활동 이미지를 정리하지 못했습니다.")
+
+  const { error } = await getSupabase().from("introduce").delete().eq("id", activityId)
+  throwIfError(error, "활동을 삭제하지 못했습니다.")
 }
 
 export async function createProject(payload: ProjectWritePayload, _token = getStoredAccessToken()) {
@@ -1227,6 +1251,32 @@ export async function updateProject(payload: ProjectWritePayload, _token = getSt
   throwIfError(membersResult.error, "프로젝트 멤버 정보를 저장하지 못했습니다.")
 
   return { projectId: row.project_id } satisfies ProjectMutationResult
+}
+
+export async function deleteProject(projectId: string, _token = getStoredAccessToken()) {
+  await requireAdminUser()
+
+  const { data: project, error: projectError } = await getSupabase()
+    .from("projects")
+    .select("id, project_id")
+    .eq("project_id", projectId)
+    .single()
+
+  throwIfError(projectError, "프로젝트를 찾을 수 없습니다.")
+
+  const row = project as Pick<ProjectRow, "id" | "project_id">
+  const [deleteImagesResult, deleteTagsResult, deleteMembersResult] = await Promise.all([
+    getSupabase().from("project_images").delete().eq("project_pk", row.id),
+    getSupabase().from("project_tags").delete().eq("project_pk", row.id),
+    getSupabase().from("project_members").delete().eq("project_pk", row.id),
+  ])
+
+  throwIfError(deleteImagesResult.error, "프로젝트 이미지를 정리하지 못했습니다.")
+  throwIfError(deleteTagsResult.error, "프로젝트 태그를 정리하지 못했습니다.")
+  throwIfError(deleteMembersResult.error, "프로젝트 멤버 정보를 정리하지 못했습니다.")
+
+  const { error } = await getSupabase().from("projects").delete().eq("id", row.id)
+  throwIfError(error, "프로젝트를 삭제하지 못했습니다.")
 }
 
 export async function updateClubContent(payload: ClubContentWritePayload, _token = getStoredAccessToken()) {
@@ -1520,6 +1570,12 @@ export async function updateClubProgram(programId: number, payload: ClubProgramW
 
   throwIfError(error, "정규 활동을 수정하지 못했습니다.")
   return mapClubProgram(data as ClubProgramRow)
+}
+
+export async function deleteClubProgram(programId: number, _token = getStoredAccessToken()) {
+  await requireAdminUser()
+  const { error } = await getSupabase().from("club_program").delete().eq("id", programId)
+  throwIfError(error, "정규 활동을 삭제하지 못했습니다.")
 }
 
 export async function createStaff(payload: StaffWritePayload, _token = getStoredAccessToken()) {

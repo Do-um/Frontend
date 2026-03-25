@@ -19,13 +19,15 @@ where email <> lower(email);
 create table if not exists public.introduce (
   id bigserial primary key,
   activity_id varchar(100) not null,
+  activity_type varchar(20) not null default 'MAIN',
   description text not null default '',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
 alter table public.introduce
-  add column if not exists activity_date date,
+  add column if not exists activity_type varchar(20) not null default 'MAIN',
+  add column if not exists activity_date text,
   add column if not exists location varchar(200),
   add column if not exists participant_count integer,
   add column if not exists participant_names text;
@@ -306,6 +308,7 @@ $$;
 
 create index if not exists idx_users_email on public.users(email);
 create index if not exists idx_introduce_created_at_desc on public.introduce(created_at desc);
+create index if not exists idx_introduce_activity_type_created_at_desc on public.introduce(activity_type, created_at desc);
 create index if not exists idx_introduce_activity_image_introduce_id on public.introduce_activity_image(introduce_id);
 create index if not exists idx_introduce_activity_image_order on public.introduce_activity_image(introduce_id, sort_order, id);
 create index if not exists idx_projects_updated_at_desc on public.projects(updated_at desc);
