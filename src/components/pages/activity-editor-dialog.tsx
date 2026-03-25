@@ -36,7 +36,8 @@ type ActivityEditorDialogProps = {
 type ActivityFormState = {
   activityId: string
   description: string
-  activityDate: string
+  startDate: string
+  endDate: string
   location: string
   participantNames: string
 }
@@ -44,7 +45,8 @@ type ActivityFormState = {
 const emptyFormState: ActivityFormState = {
   activityId: "",
   description: "",
-  activityDate: "",
+  startDate: "",
+  endDate: "",
   location: "",
   participantNames: "",
 }
@@ -54,6 +56,74 @@ function toParticipantNames(value: string) {
     .split(/\r?\n/)
     .map((item) => item.trim())
     .filter(Boolean)
+}
+
+function toDateInputValue(value: string | null | undefined, boundary: "start" | "end") {
+  const trimmed = value?.trim()
+
+  if (!trimmed) {
+    return ""
+  }
+
+  if (/^\d{4}$/.test(trimmed)) {
+    return boundary === "start" ? `${trimmed}-01-01` : `${trimmed}-12-31`
+  }
+
+  const normalized = trimmed.replace(/\./g, "-").replace(/\//g, "-")
+  const isoDatePattern = /^\d{4}-\d{2}-\d{2}$/
+
+  if (isoDatePattern.test(normalized)) {
+    return normalized
+  }
+
+  const dateTimePrefix = normalized.slice(0, 10)
+  if (isoDatePattern.test(dateTimePrefix)) {
+    return dateTimePrefix
+  }
+
+  return ""
+}
+
+function toDateRangeFormState(value: string | null | undefined) {
+  const trimmed = value?.trim()
+
+  if (!trimmed) {
+    return {
+      startDate: "",
+      endDate: "",
+    }
+  }
+
+  const parts = trimmed.split("~").map((part) => part.trim()).filter(Boolean)
+
+  if (parts.length >= 2) {
+    return {
+      startDate: toDateInputValue(parts[0], "start"),
+      endDate: toDateInputValue(parts[1], "end"),
+    }
+  }
+
+  const singleDate = toDateInputValue(trimmed, "start")
+
+  return {
+    startDate: singleDate,
+    endDate: singleDate,
+  }
+}
+
+function buildActivityDateValue(startDate: string, endDate: string) {
+  const normalizedStart = startDate.trim()
+  const normalizedEnd = endDate.trim()
+
+  if (normalizedStart && normalizedEnd) {
+    if (normalizedStart === normalizedEnd) {
+      return normalizedStart
+    }
+
+    return `${normalizedStart} ~ ${normalizedEnd}`
+  }
+
+  return normalizedStart || normalizedEnd || null
 }
 
 export function ActivityEditorDialog({
@@ -91,10 +161,13 @@ export function ActivityEditorDialog({
 
     if (mode === "edit" && activity) {
       revokeAssets(imageAssetsRef.current)
+      const { startDate, endDate } = toDateRangeFormState(activity.activityDate)
+
       setForm({
         activityId: activity.activityId,
         description: activity.description,
-        activityDate: activity.activityDate ?? "",
+        startDate,
+        endDate,
         location: activity.location ?? "",
         participantNames: activity.participantNames.join("\n"),
       })
@@ -120,7 +193,7 @@ export function ActivityEditorDialog({
       activityId: form.activityId.trim(),
       activityType: activity?.activityType ?? activityType,
       description: form.description.trim(),
-      activityDate: form.activityDate || null,
+      activityDate: buildActivityDateValue(form.startDate, form.endDate),
       location: form.location.trim() || null,
       participantNames: toParticipantNames(form.participantNames),
       participantCount: null,
@@ -177,7 +250,7 @@ export function ActivityEditorDialog({
               <div className="mb-4">
                 <h3 className="text-sm font-semibold text-[#243845]">기본 정보</h3>
                 <p className="mt-1 text-xs leading-5 text-[#748690]">
-                  카드 제목과 활동 메타데이터에 함께 반영되는 정보입니다.
+                  카드 제목과 활동 메타데이터에 함께 반영되는 정보입니다. 날짜는 저장 후 `2024 ~ 2025` 형식으로 표시됩니다.
                 </p>
               </div>
 
@@ -192,13 +265,26 @@ export function ActivityEditorDialog({
                 </label>
 
                 <label className="space-y-2">
-                  <span className="text-sm font-semibold text-[#243845]">활동 일자</span>
+                  <span className="text-sm font-semibold text-[#243845]">시작일</span>
                   <Input
-                    value={form.activityDate}
+                    type="date"
+                    value={form.startDate}
                     onChange={(event) =>
-                      setForm((current) => ({ ...current, activityDate: event.target.value }))
+                      setForm((current) => ({ ...current, startDate: event.target.value }))
                     }
-                    placeholder="2026.03.25 또는 2024 ~ 2025"
+                    placeholder="년도-월-일"
+                  />
+                </label>
+
+                <label className="space-y-2">
+                  <span className="text-sm font-semibold text-[#243845]">종료일</span>
+                  <Input
+                    type="date"
+                    value={form.endDate}
+                    onChange={(event) =>
+                      setForm((current) => ({ ...current, endDate: event.target.value }))
+                    }
+                    placeholder="년도-월-일"
                   />
                 </label>
 

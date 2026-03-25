@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic"
 import Image from "next/image"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
   ArrowUpRight,
   CalendarDays,
@@ -28,6 +28,7 @@ import { useAdminSession } from "@/hooks/use-admin-session"
 import { deleteProject, fetchProjects, type ProjectItem } from "@/lib/content-api"
 import { resolveMediaUrl } from "@/lib/media"
 import { hasSupabaseEnv } from "@/lib/supabase"
+import { getStartYearFromPeriod, getYearsFromPeriod, sortYearsForFilter } from "@/lib/year-filter"
 
 const ProjectEditorDialog = dynamic(
   () => import("@/components/pages/project-editor-dialog").then((module) => module.ProjectEditorDialog),
@@ -65,8 +66,17 @@ function getProjectImages(project: ProjectItem) {
 }
 
 function getProjectTimeValue(project: ProjectItem) {
-  const timestamp = new Date(project.updatedAt).getTime()
+  const startYear = getStartYearFromPeriod(project.period?.start, project.period?.end, project.createdAt || project.updatedAt)
+  if (startYear) {
+    return Number(startYear)
+  }
+
+  const timestamp = new Date(project.createdAt || project.updatedAt).getTime()
   return Number.isNaN(timestamp) ? 0 : timestamp
+}
+
+function getProjectYears(project: ProjectItem) {
+  return getYearsFromPeriod(project.period?.start, project.period?.end, project.updatedAt)
 }
 
 function ProjectMetaItem({
@@ -101,6 +111,7 @@ function ProjectCard({
   onSelect: (project: ProjectItem) => void
 }) {
   const galleryImages = getProjectImages(project)
+  const projectYears = getProjectYears(project)
 
   return (
     <button type="button" onClick={() => onSelect(project)} className="group flex h-full w-full text-left">
@@ -135,6 +146,14 @@ function ProjectCard({
 
         <div className="flex flex-1 flex-col p-5">
           <div className="flex min-h-[2rem] flex-wrap content-start gap-2">
+            {projectYears.map((year) => (
+              <span
+                key={`${project.projectId}-${year}`}
+                className="rounded-full border border-[#cfe0eb] bg-[#eef6fb] px-3 py-1 text-xs font-semibold text-[#44657b]"
+              >
+                {year}
+              </span>
+            ))}
             {project.tags.slice(0, 3).map((tag) => (
               <span
                 key={tag}
@@ -196,6 +215,7 @@ export function ProjectsShowcasePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [actionError, setActionError] = useState("")
+  const [selectedYear, setSelectedYear] = useState("all")
   const [selectedProject, setSelectedProject] = useState<ProjectItem | null>(null)
   const [activeImageIndex, setActiveImageIndex] = useState(0)
   const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null)
@@ -253,7 +273,20 @@ export function ProjectsShowcasePage() {
     }
   }
 
-  const orderedProjects = [...projects].sort((left, right) => {
+  const availableYears = useMemo(
+    () => sortYearsForFilter(projects.flatMap((project) => getProjectYears(project))),
+    [projects],
+  )
+
+  const filteredProjects = projects.filter((project) => {
+    if (selectedYear === "all") {
+      return true
+    }
+
+    return getProjectYears(project).includes(selectedYear)
+  })
+
+  const orderedProjects = [...filteredProjects].sort((left, right) => {
     if (left.pinned !== right.pinned) {
       return left.pinned ? -1 : 1
     }
@@ -263,6 +296,7 @@ export function ProjectsShowcasePage() {
 
   const selectedImages = selectedProject ? getProjectImages(selectedProject) : []
   const activeImage = selectedImages[activeImageIndex] ?? selectedImages[0]
+  const selectedProjectYears = selectedProject ? getProjectYears(selectedProject) : []
   const linkEntries = selectedProject
     ? [
         { label: "GitHub", href: selectedProject.links?.github, icon: Github },
@@ -278,6 +312,12 @@ export function ProjectsShowcasePage() {
         } => Boolean(item.href),
       )
     : []
+
+  useEffect(() => {
+    if (selectedYear !== "all" && !availableYears.includes(selectedYear)) {
+      setSelectedYear("all")
+    }
+  }, [availableYears, selectedYear])
 
   function openProjectDetail(project: ProjectItem) {
     setSelectedProject(project)
@@ -361,6 +401,36 @@ export function ProjectsShowcasePage() {
                 ) : null}
               </div>
 
+              {availableYears.length ? (
+                <div className="mb-8 flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedYear("all")}
+                    className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                      selectedYear === "all"
+                        ? "bg-[#1f2730] text-white shadow-sm"
+                        : "border border-[#d7e5ee] bg-white/80 text-[#355264] hover:bg-white"
+                    }`}
+                  >
+                    전체
+                  </button>
+                  {availableYears.map((year) => (
+                    <button
+                      key={`project-year-${year}`}
+                      type="button"
+                      onClick={() => setSelectedYear(year)}
+                      className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                        selectedYear === year
+                          ? "bg-[#7cb8e8] text-white shadow-sm"
+                          : "border border-[#d7e5ee] bg-white/80 text-[#355264] hover:bg-white"
+                      }`}
+                    >
+                      {year}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+
               {loading ? (
                 <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                   {Array.from({ length: 6 }).map((_, index) => (
@@ -379,7 +449,16 @@ export function ProjectsShowcasePage() {
                 </Card>
               ) : null}
 
-              {!loading && !error && !orderedProjects.length ? (
+              {!loading && !error && projects.length > 0 && !orderedProjects.length ? (
+                <Card className="rounded-[28px] border border-[#dbe6eb] bg-white/85 p-8 text-center shadow-none">
+                  <h3 className="text-xl font-bold text-[#213542]">선택한 연도에 등록된 프로젝트가 없습니다.</h3>
+                  <p className="mt-3 text-sm leading-6 text-[#677983]">
+                    다른 연도 태그를 선택하거나 프로젝트 기간을 확인해 주세요.
+                  </p>
+                </Card>
+              ) : null}
+
+              {!loading && !error && !projects.length ? (
                 <Card className="rounded-[28px] border border-[#dbe6eb] bg-white/85 p-8 text-center shadow-none">
                   <h3 className="text-xl font-bold text-[#213542]">등록된 프로젝트가 없습니다.</h3>
                   <p className="mt-3 text-sm leading-6 text-[#677983]">
@@ -481,6 +560,14 @@ export function ProjectsShowcasePage() {
                           PINNED
                         </span>
                       ) : null}
+                      {selectedProjectYears.map((year) => (
+                        <span
+                          key={`${selectedProject.projectId}-${year}`}
+                          className="rounded-full border border-[#cfe0eb] bg-[#eef6fb] px-3 py-1 text-xs font-semibold text-[#44657b]"
+                        >
+                          {year}
+                        </span>
+                      ))}
                       {selectedProject.tags.map((tag) => (
                         <span
                           key={tag}

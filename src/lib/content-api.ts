@@ -255,6 +255,8 @@ type IntroduceRow = {
   updated_at: string
 }
 
+type LegacyIntroduceRow = Omit<IntroduceRow, "activity_type">
+
 type IntroduceActivityImageRow = {
   id: number
   introduce_id: number
@@ -513,8 +515,38 @@ function createProjectId() {
   return `prj_${createRandomId().replace(/-/g, "")}`
 }
 
+const ACTIVITY_SELECT_QUERY =
+  "id, activity_id, activity_type, description, activity_date, location, participant_count, participant_names, created_at, updated_at"
+
+const LEGACY_ACTIVITY_SELECT_QUERY =
+  "id, activity_id, description, activity_date, location, participant_count, participant_names, created_at, updated_at"
+
 function normalizeActivityType(value: string | null | undefined): ActivityType {
   return value === "STUDY" ? "STUDY" : "MAIN"
+}
+
+function isMissingActivityTypeColumnError(error: { message: string } | null) {
+  const normalizedMessage = error?.message?.toLowerCase().trim() ?? ""
+  return normalizedMessage.includes("activity_type") && normalizedMessage.includes("does not exist")
+}
+
+function inferLegacyActivityType(row: IntroduceRow | LegacyIntroduceRow): ActivityType {
+  const keywordSource = [row.activity_id, row.description, row.location, row.participant_names]
+    .filter((value): value is string => Boolean(value))
+    .join("\n")
+
+  if (/study/i.test(keywordSource) || keywordSource.includes("스터디") || keywordSource.includes("모각코")) {
+    return "STUDY"
+  }
+
+  return "MAIN"
+}
+
+function normalizeIntroduceRow(row: IntroduceRow | LegacyIntroduceRow): IntroduceRow {
+  return {
+    ...row,
+    activity_type: "activity_type" in row ? row.activity_type : inferLegacyActivityType(row),
+  }
 }
 
 function todayKey() {
@@ -750,6 +782,104 @@ async function fetchActivityImageRows(introduceIds: number[]) {
   return (data as IntroduceActivityImageRow[]) ?? []
 }
 
+async function fetchIntroduceRows(fallbackMessage: string) {
+  const primaryResult = await getSupabase().from("introduce").select(ACTIVITY_SELECT_QUERY).order("created_at", { ascending: false })
+
+  if (!primaryResult.error) {
+    return (primaryResult.data as IntroduceRow[]) ?? []
+  }
+
+  if (!isMissingActivityTypeColumnError(primaryResult.error)) {
+    throwIfError(primaryResult.error, fallbackMessage)
+  }
+
+  const legacyResult = await getSupabase()
+    .from("introduce")
+    .select(LEGACY_ACTIVITY_SELECT_QUERY)
+    .order("created_at", { ascending: false })
+
+  throwIfError(legacyResult.error, fallbackMessage)
+  return ((legacyResult.data as LegacyIntroduceRow[]) ?? []).map(normalizeIntroduceRow)
+}
+
+async function insertIntroduceRow(payload: ActivityWritePayload, fallbackMessage: string) {
+  const basePayload = {
+    activity_id: payload.activityId.trim(),
+    description: payload.description.trim(),
+    activity_date: payload.activityDate,
+    location: trimOrNull(payload.location),
+    participant_names: joinLines(payload.participantNames),
+    participant_count: payload.participantNames.length || payload.participantCount,
+  }
+
+  const primaryResult = await getSupabase()
+    .from("introduce")
+    .insert({
+      ...basePayload,
+      activity_type: payload.activityType,
+    })
+    .select(ACTIVITY_SELECT_QUERY)
+    .single()
+
+  if (!primaryResult.error) {
+    return primaryResult.data as IntroduceRow
+  }
+
+  if (!isMissingActivityTypeColumnError(primaryResult.error)) {
+    throwIfError(primaryResult.error, fallbackMessage)
+  }
+
+  const legacyResult = await getSupabase().from("introduce").insert(basePayload).select(LEGACY_ACTIVITY_SELECT_QUERY).single()
+
+  throwIfError(legacyResult.error, fallbackMessage)
+  return {
+    ...(legacyResult.data as LegacyIntroduceRow),
+    activity_type: payload.activityType,
+  }
+}
+
+async function updateIntroduceRow(activityId: number, payload: ActivityWritePayload, fallbackMessage: string) {
+  const basePayload = {
+    activity_id: payload.activityId.trim(),
+    description: payload.description.trim(),
+    activity_date: payload.activityDate,
+    location: trimOrNull(payload.location),
+    participant_names: joinLines(payload.participantNames),
+    participant_count: payload.participantNames.length || payload.participantCount,
+  }
+
+  const primaryResult = await getSupabase()
+    .from("introduce")
+    .update({
+      ...basePayload,
+      activity_type: payload.activityType,
+    })
+    .eq("id", activityId)
+    .select(ACTIVITY_SELECT_QUERY)
+    .single()
+
+  if (!primaryResult.error) {
+    return primaryResult.data as IntroduceRow
+  }
+
+  if (!isMissingActivityTypeColumnError(primaryResult.error)) {
+    throwIfError(primaryResult.error, fallbackMessage)
+  }
+
+  const legacyResult = await getSupabase()
+    .from("introduce")
+    .update(basePayload)
+    .eq("id", activityId)
+    .select(LEGACY_ACTIVITY_SELECT_QUERY)
+    .single()
+
+  throwIfError(legacyResult.error, fallbackMessage)
+  return {
+    ...(legacyResult.data as LegacyIntroduceRow),
+    activity_type: payload.activityType,
+  }
+}
+
 async function fetchProjectRelations(projectIds: number[]) {
   if (!projectIds.length) {
     return {
@@ -844,6 +974,13 @@ async function upsertSingletonRow<T>(
 }
 
 export async function fetchActivities() {
+  const compatibleRows = await fetchIntroduceRows("?œë™ ?°ì´?°ë? ë¶ˆëŸ¬?¤ì? ëª»í–ˆ?µë‹ˆ??")
+  const compatibleImageRows = await fetchActivityImageRows(compatibleRows.map((row) => row.id))
+
+  return compatibleRows.map((row) =>
+    mapActivity(row, compatibleImageRows.filter((imageRow) => imageRow.introduce_id === row.id)),
+  )
+
   const { data, error } = await getSupabase()
     .from("introduce")
     .select("id, activity_id, activity_type, description, activity_date, location, participant_count, participant_names, created_at, updated_at")
@@ -1044,6 +1181,21 @@ export async function fetchRentalSchedule(itemId: number) {
 
 export async function createActivity(payload: ActivityWritePayload, _token = getStoredAccessToken()) {
   await requireAdminUser()
+  const compatibleRow = await insertIntroduceRow(payload, "?œë™???€?¥í•˜ì§€ ëª»í–ˆ?µë‹ˆ??")
+
+  if (payload.activityImages.length) {
+    const { error: imageError } = await getSupabase().from("introduce_activity_image").insert(
+      payload.activityImages.map((imageUrl, index) => ({
+        introduce_id: compatibleRow.id,
+        image_url: imageUrl,
+        sort_order: index,
+      })),
+    )
+    throwIfError(imageError, "?œë™ ?´ë?ì§€ë¥??€?¥í•˜ì§€ ëª»í–ˆ?µë‹ˆ??")
+  }
+
+  return mapActivity(compatibleRow, await fetchActivityImageRows([compatibleRow.id]))
+
   const { data, error } = await getSupabase()
     .from("introduce")
     .insert({
@@ -1101,6 +1253,24 @@ export async function uploadImageFiles(files: File[], _token = getStoredAccessTo
 
 export async function updateActivity(activityId: number, payload: ActivityWritePayload, _token = getStoredAccessToken()) {
   await requireAdminUser()
+  const compatibleRow = await updateIntroduceRow(activityId, payload, "?œë™???˜ì •?˜ì? ëª»í–ˆ?µë‹ˆ??")
+
+  const { error: compatibleDeleteImageError } = await getSupabase().from("introduce_activity_image").delete().eq("introduce_id", activityId)
+  throwIfError(compatibleDeleteImageError, "ê¸°ì¡´ ?œë™ ?´ë?ì§€ë¥??•ë¦¬?˜ì? ëª»í–ˆ?µë‹ˆ??")
+
+  if (payload.activityImages.length) {
+    const { error: compatibleInsertImageError } = await getSupabase().from("introduce_activity_image").insert(
+      payload.activityImages.map((imageUrl, index) => ({
+        introduce_id: activityId,
+        image_url: imageUrl,
+        sort_order: index,
+      })),
+    )
+    throwIfError(compatibleInsertImageError, "?œë™ ?´ë?ì§€ë¥??€?¥í•˜ì§€ ëª»í–ˆ?µë‹ˆ??")
+  }
+
+  return mapActivity(compatibleRow, await fetchActivityImageRows([activityId]))
+
   const { data, error } = await getSupabase()
     .from("introduce")
     .update({

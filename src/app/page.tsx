@@ -22,6 +22,7 @@ import {
   type ClubContentWritePayload,
 } from "@/lib/content-api"
 import { resolveMediaUrl } from "@/lib/media"
+import { getStartYearFromRangeValue, getYearsFromRangeValue, sortYearsForFilter } from "@/lib/year-filter"
 
 const ActivityEditorDialog = dynamic(
   () => import("@/components/pages/activity-editor-dialog").then((module) => module.ActivityEditorDialog),
@@ -75,9 +76,18 @@ const emptyClubContentPayload: ClubContentWritePayload = {
 }
 
 function compareActivities(left: ActivityItem, right: ActivityItem) {
-  const leftKey = left.activityDate || left.createdAt
-  const rightKey = right.activityDate || right.createdAt
-  return rightKey.localeCompare(leftKey)
+  const leftStartYear = Number(getStartYearFromRangeValue(left.activityDate) ?? getStartYearFromRangeValue(left.createdAt) ?? 0)
+  const rightStartYear = Number(getStartYearFromRangeValue(right.activityDate) ?? getStartYearFromRangeValue(right.createdAt) ?? 0)
+
+  if (leftStartYear !== rightStartYear) {
+    return rightStartYear - leftStartYear
+  }
+
+  return right.createdAt.localeCompare(left.createdAt)
+}
+
+function getActivityYears(activity: ActivityItem) {
+  return getYearsFromRangeValue(activity.activityDate || activity.createdAt)
 }
 
 export default function Home() {
@@ -88,6 +98,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [mutationError, setMutationError] = useState("")
+  const [selectedActivityYear, setSelectedActivityYear] = useState("all")
   const [contentEditorOpen, setContentEditorOpen] = useState(false)
   const [deletingProgramId, setDeletingProgramId] = useState<number | null>(null)
   const [deletingActivityId, setDeletingActivityId] = useState<number | null>(null)
@@ -140,9 +151,27 @@ export default function Home() {
     }
   }, [])
 
-  const displayedActivities = useMemo(() => {
-    return activities.filter((activity) => activity.activityType === "MAIN").sort(compareActivities).slice(0, 3)
+  const mainActivities = useMemo(() => {
+    return activities.filter((activity) => activity.activityType === "MAIN")
   }, [activities])
+
+  const availableActivityYears = useMemo(
+    () => sortYearsForFilter(mainActivities.flatMap((activity) => getActivityYears(activity))),
+    [mainActivities],
+  )
+
+  const displayedActivities = useMemo(() => {
+    return mainActivities
+      .filter((activity) => selectedActivityYear === "all" || getActivityYears(activity).includes(selectedActivityYear))
+      .sort(compareActivities)
+      .slice(0, 3)
+  }, [mainActivities, selectedActivityYear])
+
+  useEffect(() => {
+    if (selectedActivityYear !== "all" && !availableActivityYears.includes(selectedActivityYear)) {
+      setSelectedActivityYear("all")
+    }
+  }, [availableActivityYears, selectedActivityYear])
 
   function handleProgramSaved(savedProgram: ClubProgramItem) {
     setMutationError("")
@@ -382,7 +411,43 @@ export default function Home() {
                 ) : null}
               </div>
 
+              {availableActivityYears.length ? (
+                <div className="mb-6 flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedActivityYear("all")}
+                    className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                      selectedActivityYear === "all"
+                        ? "bg-[#1f2730] text-white shadow-sm"
+                        : "border border-[#d7e5ee] bg-white text-[#355264] hover:bg-[#f7fbfd]"
+                    }`}
+                  >
+                    전체
+                  </button>
+                  {availableActivityYears.map((year) => (
+                    <button
+                      key={`home-history-${year}`}
+                      type="button"
+                      onClick={() => setSelectedActivityYear(year)}
+                      className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                        selectedActivityYear === year
+                          ? "bg-[#7cb8e8] text-white shadow-sm"
+                          : "border border-[#d7e5ee] bg-white text-[#355264] hover:bg-[#f7fbfd]"
+                      }`}
+                    >
+                      {year}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+
               <div className="space-y-10">
+                {!displayedActivities.length ? (
+                  <div className="rounded-2xl border border-[#d7e5ee] bg-[#f8fbfd] px-5 py-4 text-sm text-[#60717d]">
+                    선택한 연도에 등록된 주요활동이 없습니다.
+                  </div>
+                ) : null}
+
                 {displayedActivities.map((activity, index) => (
                   <div
                     key={activity.id}
@@ -403,7 +468,19 @@ export default function Home() {
 
                     <div className="flex min-h-[160px] flex-col justify-center">
                       <div className="flex items-start justify-between gap-3">
-                        <p className="text-sm font-semibold text-gray-900">{activity.activityId}</p>
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            {getActivityYears(activity).map((year) => (
+                              <span
+                                key={`${activity.id}-${year}`}
+                                className="rounded-full border border-[#d7e5ee] bg-[#eef6fb] px-3 py-1 text-xs font-semibold text-[#44657b]"
+                              >
+                                {year}
+                              </span>
+                            ))}
+                          </div>
+                          <p className="text-sm font-semibold text-gray-900">{activity.activityId}</p>
+                        </div>
                         {isAdmin ? (
                           <div className="flex items-center gap-2">
                             <Button

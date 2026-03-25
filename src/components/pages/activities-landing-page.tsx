@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
   ArrowUpRight,
   CalendarDays,
@@ -27,6 +27,7 @@ import { useAdminSession } from "@/hooks/use-admin-session"
 import { deleteActivity, fetchActivities, type ActivityItem } from "@/lib/content-api"
 import { resolveMediaUrl } from "@/lib/media"
 import { hasSupabaseEnv } from "@/lib/supabase"
+import { getStartYearFromRangeValue, getYearsFromRangeValue, sortYearsForFilter } from "@/lib/year-filter"
 
 const PAGE_SIZE = 6
 type ActivityArchiveMode = "all" | "study"
@@ -42,7 +43,58 @@ type ActivitiesLandingPageProps = {
   emptyDescription?: string
 }
 
-function formatDate(value?: string | null) {
+function normalizeActivityDateToken(value?: string | null) {
+  const trimmed = value?.trim()
+
+  if (!trimmed) {
+    return null
+  }
+
+  if (/^\d{4}$/.test(trimmed)) {
+    return `${trimmed}-01-01`
+  }
+
+  const normalized = trimmed.replace(/\./g, "-").replace(/\//g, "-")
+  const isoDatePattern = /^\d{4}-\d{2}-\d{2}$/
+
+  if (isoDatePattern.test(normalized)) {
+    return normalized
+  }
+
+  const dateTimePrefix = normalized.slice(0, 10)
+  if (isoDatePattern.test(dateTimePrefix)) {
+    return dateTimePrefix
+  }
+
+  return null
+}
+
+function parseActivityDateRange(value?: string | null) {
+  const trimmed = value?.trim()
+
+  if (!trimmed) {
+    return {
+      startDate: null,
+      endDate: null,
+    }
+  }
+
+  const parts = trimmed.split("~").map((part) => part.trim()).filter(Boolean)
+
+  if (parts.length >= 2) {
+    return {
+      startDate: normalizeActivityDateToken(parts[0]),
+      endDate: normalizeActivityDateToken(parts[1]),
+    }
+  }
+
+  return {
+    startDate: normalizeActivityDateToken(trimmed),
+    endDate: null,
+  }
+}
+
+function formatAbsoluteDate(value?: string | null) {
   if (!value) {
     return "미정"
   }
@@ -71,13 +123,43 @@ function formatDate(value?: string | null) {
   }).format(date)
 }
 
+function formatActivityPeriod(value?: string | null) {
+  if (!value) {
+    return "미정"
+  }
+
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return "미정"
+  }
+
+  const { startDate, endDate } = parseActivityDateRange(trimmed)
+
+  if (startDate && endDate) {
+    const startYear = startDate.slice(0, 4)
+    const endYear = endDate.slice(0, 4)
+
+    return startYear === endYear ? startYear : `${startYear} ~ ${endYear}`
+  }
+
+  if (startDate) {
+    return startDate.slice(0, 4)
+  }
+
+  return trimmed
+}
+
 function getActivityTimeValue(activity: ActivityItem) {
-  const normalized = activity.activityDate
-    ? `${activity.activityDate}T00:00:00`
-    : activity.createdAt
+  const { startDate } = parseActivityDateRange(activity.activityDate)
+  const fallbackStartYear = getStartYearFromRangeValue(activity.activityDate)
+  const normalized = startDate ? `${startDate}T00:00:00` : fallbackStartYear ? `${fallbackStartYear}-01-01T00:00:00` : activity.createdAt
   const timestamp = new Date(normalized).getTime()
 
   return Number.isNaN(timestamp) ? 0 : timestamp
+}
+
+function getActivityYears(activity: ActivityItem) {
+  return getYearsFromRangeValue(activity.activityDate || activity.createdAt)
 }
 
 function formatParticipantNames(names: string[], maxVisible = 3) {
@@ -163,6 +245,7 @@ function ActivityCard({
   const primaryImage = activity.activityImages[0]
   const target = inferActivityLinkByType(activity)
   const participantSummary = formatParticipantSummary(activity)
+  const activityYears = getActivityYears(activity)
 
   return (
     <button type="button" onClick={() => onSelect(activity)} className="group flex h-full w-full text-left">
@@ -179,9 +262,19 @@ function ActivityCard({
               <Image src="/placeholder.svg" alt="" width={96} height={96} className="opacity-55" />
             </div>
           )}
-          <span className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-[#567289] shadow-sm">
-            {target.label}
-          </span>
+          <div className="absolute left-4 top-4 flex max-w-[70%] flex-wrap items-center gap-2">
+            <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-[#567289] shadow-sm">
+              {target.label}
+            </span>
+            {activityYears.map((year) => (
+              <span
+                key={`${activity.id}-${year}`}
+                className="rounded-full border border-white/80 bg-[#7cb8e8]/90 px-3 py-1 text-xs font-semibold text-white shadow-sm"
+              >
+                {year}
+              </span>
+            ))}
+          </div>
           <div className="absolute right-4 top-4 flex items-center gap-2 rounded-full bg-[#1f2730]/75 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm">
             <span>상세보기</span>
             <ArrowUpRight className="size-3.5" />
@@ -201,7 +294,7 @@ function ActivityCard({
           <div className="mt-5 flex min-h-[5rem] flex-wrap content-start items-start gap-2 text-xs text-[#74838c]">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f1f6f9] px-3 py-1.5">
               <CalendarDays className="size-3.5" />
-              {formatDate(activity.activityDate ?? activity.createdAt)}
+              {formatActivityPeriod(activity.activityDate)}
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f1f6f9] px-3 py-1.5">
               <Images className="size-3.5" />
@@ -218,7 +311,7 @@ function ActivityCard({
           <div className="mt-auto flex items-center justify-between gap-3 pt-5 text-xs text-[#74838c]">
             <div className="flex items-center gap-1.5">
               <Clock3 className="size-3.5" />
-              <span>{formatDate(activity.createdAt)}</span>
+              <span>{formatAbsoluteDate(activity.createdAt)}</span>
             </div>
             <div className="text-[#4d6473]">클릭해서 상세 보기</div>
           </div>
@@ -260,6 +353,7 @@ export function ActivitiesLandingPage({
   const [error, setError] = useState("")
   const [actionError, setActionError] = useState("")
   const [sortOrder, setSortOrder] = useState<"latest" | "oldest">("latest")
+  const [selectedYear, setSelectedYear] = useState("all")
   const [page, setPage] = useState(1)
   const [selectedActivity, setSelectedActivity] = useState<ActivityItem | null>(null)
   const [activeImageIndex, setActiveImageIndex] = useState(0)
@@ -305,7 +399,20 @@ export function ActivitiesLandingPage({
 
   const filteredActivities = activities.filter((activity) => matchesArchiveMode(activity, mode))
 
-  const sortedActivities = [...filteredActivities].sort((left, right) => {
+  const availableYears = useMemo(
+    () => sortYearsForFilter(filteredActivities.flatMap((activity) => getActivityYears(activity))),
+    [filteredActivities],
+  )
+
+  const yearFilteredActivities = filteredActivities.filter((activity) => {
+    if (selectedYear === "all") {
+      return true
+    }
+
+    return getActivityYears(activity).includes(selectedYear)
+  })
+
+  const sortedActivities = [...yearFilteredActivities].sort((left, right) => {
     const leftTime = getActivityTimeValue(left)
     const rightTime = getActivityTimeValue(right)
     return sortOrder === "latest" ? rightTime - leftTime : leftTime - rightTime
@@ -321,9 +428,16 @@ export function ActivitiesLandingPage({
     }
   }, [page, totalPages])
 
+  useEffect(() => {
+    if (selectedYear !== "all" && !availableYears.includes(selectedYear)) {
+      setSelectedYear("all")
+    }
+  }, [availableYears, selectedYear])
+
   const selectedActivityTarget = selectedActivity ? inferActivityLinkByType(selectedActivity) : null
   const selectedImages = selectedActivity?.activityImages ?? []
   const activeImage = selectedImages[activeImageIndex] ?? selectedImages[0]
+  const selectedActivityYears = selectedActivity ? getActivityYears(selectedActivity) : []
   function openActivityDetail(activity: ActivityItem) {
     setSelectedActivity(activity)
     setActiveImageIndex(0)
@@ -404,7 +518,7 @@ export function ActivitiesLandingPage({
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
                   <p className="text-sm text-[#72828c]">
-                    총 <span className="font-semibold text-[#294255]">{filteredActivities.length}</span>개의 활동
+                    총 <span className="font-semibold text-[#294255]">{yearFilteredActivities.length}</span>개의 활동
                   </p>
                   <Button
                     size="sm"
@@ -435,6 +549,42 @@ export function ActivitiesLandingPage({
                 </div>
               </div>
 
+              {availableYears.length ? (
+                <div className="mb-8 flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedYear("all")
+                      setPage(1)
+                    }}
+                    className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                      selectedYear === "all"
+                        ? "bg-[#1f2730] text-white shadow-sm"
+                        : "border border-[#d7e5ee] bg-white/80 text-[#355264] hover:bg-white"
+                    }`}
+                  >
+                    전체
+                  </button>
+                  {availableYears.map((year) => (
+                    <button
+                      key={`${mode}-${year}`}
+                      type="button"
+                      onClick={() => {
+                        setSelectedYear(year)
+                        setPage(1)
+                      }}
+                      className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                        selectedYear === year
+                          ? "bg-[#7cb8e8] text-white shadow-sm"
+                          : "border border-[#d7e5ee] bg-white/80 text-[#355264] hover:bg-white"
+                      }`}
+                    >
+                      {year}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+
               {loading ? (
                 <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                   {Array.from({ length: PAGE_SIZE }).map((_, index) => (
@@ -453,7 +603,7 @@ export function ActivitiesLandingPage({
                 </Card>
               ) : null}
 
-              {!loading && !error && !filteredActivities.length ? (
+              {!loading && !error && !yearFilteredActivities.length ? (
                 <Card className="rounded-[28px] border border-[#dbe6eb] bg-white/85 p-8 text-center shadow-none">
                   <h3 className="text-xl font-bold text-[#213542]">{emptyTitle}</h3>
                   <p className="mt-3 text-sm leading-6 text-[#677983]">{emptyDescription}</p>
@@ -592,6 +742,19 @@ export function ActivitiesLandingPage({
                       Activity Detail
                     </div>
 
+                    {selectedActivityYears.length ? (
+                      <div className="mt-5 flex flex-wrap items-center gap-2">
+                        {selectedActivityYears.map((year) => (
+                          <span
+                            key={`${selectedActivity.id}-${year}`}
+                            className="rounded-full border border-[#d7e5ee] bg-[#eef6fb] px-3 py-1 text-xs font-semibold text-[#44657b]"
+                          >
+                            {year}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
+
                     <div className="mt-5 flex flex-wrap items-start justify-between gap-4">
                       <h2 className="text-3xl font-black tracking-tight text-[#15212b]">
                         {selectedActivity.activityId}
@@ -631,7 +794,7 @@ export function ActivitiesLandingPage({
                       <ActivityMetaItem
                         icon={CalendarDays}
                         label="Activity Date"
-                        value={formatDate(selectedActivity.activityDate ?? selectedActivity.createdAt)}
+                        value={formatActivityPeriod(selectedActivity.activityDate)}
                       />
                       <ActivityMetaItem
                         icon={Users}
