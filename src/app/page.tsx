@@ -351,27 +351,29 @@ export default function Home() {
                             className="mt-3 max-w-[34ch] flex-1 overflow-hidden text-[0.95rem] leading-7 text-[#52626d] [text-wrap:pretty]"
                           />
                         </div>
-                        {isAdmin ? (
-                          <div className="flex items-center gap-2 self-start">
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              onClick={() => setProgramEditorState({ mode: "edit", program })}
-                              className="rounded-full text-[#355264] hover:bg-white/70"
-                            >
-                              <PencilLine className="size-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              onClick={() => void handleProgramDelete(program)}
-                              disabled={deletingProgramId === program.id}
-                              className="rounded-full text-[#a44a4a] hover:bg-white/70"
-                            >
-                              <Trash2 className="size-4" />
-                            </Button>
-                          </div>
-                        ) : null}
+                        <div className="flex w-[72px] shrink-0 justify-end self-start">
+                          {isAdmin ? (
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={() => setProgramEditorState({ mode: "edit", program })}
+                                className="rounded-full text-[#355264] hover:bg-white/70"
+                              >
+                                <PencilLine className="size-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={() => void handleProgramDelete(program)}
+                                disabled={deletingProgramId === program.id}
+                                className="rounded-full text-[#a44a4a] hover:bg-white/70"
+                              >
+                                <Trash2 className="size-4" />
+                              </Button>
+                            </div>
+                          ) : null}
+                        </div>
                       </div>
                     </div>
                   ))}
