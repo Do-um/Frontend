@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { PencilLine, Plus, Trash2 } from "lucide-react"
 
+import { MarkdownSupportNote } from "@/components/common/markdown-support-note"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -194,6 +195,7 @@ export function RecruitContentEditorDialog({
                     }
                     className="min-h-[110px]"
                   />
+                  <MarkdownSupportNote />
                 </label>
 
                 <label className="space-y-2">
@@ -286,6 +288,7 @@ export function RecruitContentEditorDialog({
                     }
                     className="min-h-[96px]"
                   />
+                  <MarkdownSupportNote />
                 </label>
 
                 <div className="space-y-3">

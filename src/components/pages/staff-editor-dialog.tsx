@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 
+import { MarkdownSupportNote } from "@/components/common/markdown-support-note"
 import { ImageDropzoneField } from "@/components/image-dropzone-field"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -233,6 +234,7 @@ export function StaffEditorDialog({
                 }
                 className="min-h-[130px]"
               />
+              <MarkdownSupportNote />
             </label>
           </div>
 

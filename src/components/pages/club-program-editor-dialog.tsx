@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 
+import { MarkdownSupportNote } from "@/components/common/markdown-support-note"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -123,6 +124,7 @@ export function ClubProgramEditorDialog({
                 onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
                 className="min-h-[130px]"
               />
+              <MarkdownSupportNote />
             </label>
 
             <label className="space-y-2">

@@ -17,6 +17,7 @@ import {
   type LucideIcon,
 } from "lucide-react"
 
+import { MarkdownContent } from "@/components/common/markdown-content"
 import { ActivityEditorDialog } from "@/components/pages/activity-editor-dialog"
 import { HeaderNav } from "@/components/header-nav"
 import { SiteFooter } from "@/components/site-footer"
@@ -286,9 +287,11 @@ function ActivityCard({
             <h2 className="overflow-hidden text-lg font-bold leading-7 text-[#1f2a33] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
               {activity.activityId}
             </h2>
-            <p className="mt-2 overflow-hidden text-sm leading-6 text-[#60717d] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
-              {activity.description}
-            </p>
+            <MarkdownContent
+              content={activity.description}
+              compact
+              className="mt-2 max-h-[3rem] overflow-hidden text-sm leading-6 text-[#60717d]"
+            />
           </div>
 
           <div className="mt-5 flex min-h-[5rem] flex-wrap content-start items-start gap-2 text-xs text-[#74838c]">
@@ -786,9 +789,10 @@ export function ActivitiesLandingPage({
                         </div>
                       ) : null}
                     </div>
-                    <p className="mt-4 whitespace-pre-line text-sm leading-7 text-[#576a75] sm:text-base">
-                      {selectedActivity.description}
-                    </p>
+                    <MarkdownContent
+                      content={selectedActivity.description}
+                      className="mt-4 text-sm leading-7 text-[#576a75] sm:text-base"
+                    />
 
                     <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-1">
                       <ActivityMetaItem

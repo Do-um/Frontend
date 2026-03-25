@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 
+import { MarkdownSupportNote } from "@/components/common/markdown-support-note"
 import { ImageDropzoneField } from "@/components/image-dropzone-field"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -237,11 +238,13 @@ export function ProjectEditorDialog({
 
             <label className="space-y-2 sm:col-span-2">
               <span className="text-sm font-semibold text-[#243845]">프로젝트 요약</span>
-              <Input
+              <Textarea
                 value={form.summary}
                 onChange={(event) => setForm((current) => ({ ...current, summary: event.target.value }))}
+                className="min-h-[100px]"
                 placeholder="한 줄 요약"
               />
+              <MarkdownSupportNote />
             </label>
 
             <label className="space-y-2 sm:col-span-2">
@@ -252,6 +255,7 @@ export function ProjectEditorDialog({
                 className="min-h-[160px]"
                 placeholder="프로젝트 배경, 기능, 결과를 적어 주세요."
               />
+              <MarkdownSupportNote />
             </label>
 
             <div className="sm:col-span-2">

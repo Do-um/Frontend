@@ -6,6 +6,7 @@ import Link from "next/link"
 import { useEffect, useMemo, useState, type ReactNode } from "react"
 import { Github, Instagram, PencilLine, Plus, Trash2 } from "lucide-react"
 
+import { MarkdownContent } from "@/components/common/markdown-content"
 import { HeaderNav } from "@/components/header-nav"
 import { SiteFooter } from "@/components/site-footer"
 import { Button } from "@/components/ui/button"
@@ -356,7 +357,11 @@ function MemberCard({
                 {member.role}
               </span>
             </div>
-            <p className="mt-1 text-sm text-[#707070]">{member.description}</p>
+            <MarkdownContent
+              content={member.description}
+              compact
+              className="mt-1 max-h-[3rem] overflow-hidden text-sm text-[#707070]"
+            />
           </div>
         </div>
         {isAdmin ? (

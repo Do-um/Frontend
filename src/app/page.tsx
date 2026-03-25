@@ -5,6 +5,7 @@ import Image from "next/image"
 import { useEffect, useMemo, useState } from "react"
 import { PencilLine, Plus, Trash2 } from "lucide-react"
 
+import { MarkdownContent } from "@/components/common/markdown-content"
 import { HeaderNav } from "@/components/header-nav"
 import { SiteFooter } from "@/components/site-footer"
 import { Button } from "@/components/ui/button"
@@ -24,10 +25,6 @@ import {
 import { resolveMediaUrl } from "@/lib/media"
 import { getStartYearFromRangeValue, getYearsFromRangeValue, sortYearsForFilter } from "@/lib/year-filter"
 
-const ActivityEditorDialog = dynamic(
-  () => import("@/components/pages/activity-editor-dialog").then((module) => module.ActivityEditorDialog),
-  { ssr: false },
-)
 const ClubContentEditorDialog = dynamic(
   () => import("@/components/pages/club-content-editor-dialog").then((module) => module.ClubContentEditorDialog),
   { ssr: false },
@@ -107,10 +104,6 @@ export default function Home() {
     mode: "create" | "edit"
     program: ClubProgramItem | null
   } | null>(null)
-  const [activityEditorState, setActivityEditorState] = useState<{
-    mode: "create" | "edit"
-    activity: ActivityItem | null
-  } | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -182,18 +175,6 @@ export default function Home() {
     )
   }
 
-  function handleActivitySaved(savedActivity: ActivityItem) {
-    setMutationError("")
-    setActivities((current) => {
-      const hasExisting = current.some((activity) => activity.id === savedActivity.id)
-      const nextActivities = hasExisting
-        ? current.map((activity) => (activity.id === savedActivity.id ? savedActivity : activity))
-        : [savedActivity, ...current]
-
-      return nextActivities.sort(compareActivities)
-    })
-  }
-
   async function handleProgramDelete(target: ClubProgramItem) {
     if (!window.confirm(`"${target.title}" 정규 활동을 삭제할까요?`)) {
       return
@@ -227,10 +208,6 @@ export default function Home() {
     try {
       await deleteActivity(target.id)
       setActivities((current) => current.filter((item) => item.id !== target.id))
-
-      if (activityEditorState?.activity?.id === target.id) {
-        setActivityEditorState(null)
-      }
     } catch (err) {
       setMutationError(err instanceof Error ? err.message : "히스토리 삭제 중 오류가 발생했습니다.")
     } finally {
@@ -298,7 +275,10 @@ export default function Home() {
               <div>
                 <h2 className="mb-3 text-2xl font-bold text-gray-900">{clubContent.introTitle}</h2>
                 <p className="mb-1 text-sm text-gray-600">{clubContent.introLead}</p>
-                <p className="max-w-3xl text-sm leading-6 text-gray-600">{clubContent.introDescription}</p>
+                <MarkdownContent
+                  content={clubContent.introDescription}
+                  className="max-w-3xl text-sm leading-6 text-gray-600"
+                />
               </div>
               {isAdmin ? (
                 <div className="flex flex-wrap items-center gap-2">
@@ -358,17 +338,21 @@ export default function Home() {
                   {programs.map((program) => (
                     <div
                       key={program.id}
-                      className="flex h-full flex-col rounded-2xl border border-[#D0E4F5] bg-[#EAF4FB] p-4 shadow-sm"
+                      className="self-start rounded-[24px] border border-[#cfe2f2] bg-[linear-gradient(180deg,#edf5fc_0%,#e6f0f8_100%)] p-5 shadow-[0_10px_26px_rgba(87,122,153,0.12)]"
                     >
-                      <div className="flex min-h-[132px] items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="text-sm font-bold text-gray-900">{program.title}</p>
-                          <p className="mt-1 overflow-hidden text-xs leading-5 text-gray-600 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3]">
-                            {program.description}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="max-w-[18ch] text-[1.05rem] font-bold leading-[1.4] tracking-[-0.02em] text-[#1c2a36] [text-wrap:balance]">
+                            {program.title}
                           </p>
+                          <MarkdownContent
+                            content={program.description}
+                            compact
+                            className="mt-3 max-w-[34ch] max-h-[7rem] overflow-hidden text-[0.95rem] leading-7 text-[#52626d] [text-wrap:pretty]"
+                          />
                         </div>
                         {isAdmin ? (
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 self-start">
                             <Button
                               variant="ghost"
                               size="icon-sm"
@@ -398,17 +382,6 @@ export default function Home() {
             <div>
               <div className="mb-8 flex items-center justify-between gap-4">
                 <h3 className="text-lg font-bold text-gray-900">{clubContent.historySectionTitle}</h3>
-                {isAdmin ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setActivityEditorState({ mode: "create", activity: null })}
-                    className="rounded-full border-[#d7e5ee] bg-white/80 px-4 text-[#355264] hover:bg-white"
-                  >
-                    <Plus className="size-4" />
-                    히스토리 추가
-                  </Button>
-                ) : null}
               </div>
 
               {availableActivityYears.length ? (
@@ -486,14 +459,6 @@ export default function Home() {
                             <Button
                               variant="ghost"
                               size="icon-sm"
-                              onClick={() => setActivityEditorState({ mode: "edit", activity })}
-                              className="rounded-full text-[#355264] hover:bg-white/70"
-                            >
-                              <PencilLine className="size-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
                               onClick={() => void handleActivityDelete(activity)}
                               disabled={deletingActivityId === activity.id}
                               className="rounded-full text-[#a44a4a] hover:bg-white/70"
@@ -503,7 +468,11 @@ export default function Home() {
                           </div>
                         ) : null}
                       </div>
-                      <p className="mt-2 max-w-xl text-sm leading-6 text-gray-600">{activity.description}</p>
+                      <MarkdownContent
+                        content={activity.description}
+                        compact
+                        className="mt-2 max-w-xl text-sm leading-6 text-gray-600"
+                      />
                     </div>
                   </div>
                 ))}
@@ -524,15 +493,15 @@ export default function Home() {
             <div className="ml-2 space-y-5">
               <div>
                 <p className="text-lg font-bold text-gray-900">{clubContent.learnTitle}</p>
-                <p className="text-base text-gray-600">{clubContent.learnDescription}</p>
+                <MarkdownContent content={clubContent.learnDescription} className="text-base text-gray-600" />
               </div>
               <div>
                 <p className="text-lg font-bold text-gray-900">{clubContent.growTitle}</p>
-                <p className="text-base text-gray-600">{clubContent.growDescription}</p>
+                <MarkdownContent content={clubContent.growDescription} className="text-base text-gray-600" />
               </div>
               <div>
                 <p className="text-lg font-bold text-gray-900">{clubContent.shareTitle}</p>
-                <p className="text-base text-gray-600">{clubContent.shareDescription}</p>
+                <MarkdownContent content={clubContent.shareDescription} className="text-base text-gray-600" />
               </div>
             </div>
 
@@ -569,19 +538,6 @@ export default function Home() {
           }
         }}
         onSaved={handleProgramSaved}
-      />
-
-      <ActivityEditorDialog
-        open={Boolean(activityEditorState)}
-        mode={activityEditorState?.mode ?? "create"}
-        activity={activityEditorState?.activity}
-        activityType="MAIN"
-        onOpenChange={(open) => {
-          if (!open) {
-            setActivityEditorState(null)
-          }
-        }}
-        onSaved={handleActivitySaved}
       />
     </div>
   )

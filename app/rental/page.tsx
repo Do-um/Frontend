@@ -6,6 +6,7 @@ import { type ComponentProps, useEffect, useMemo, useRef, useState } from "react
 import { PencilLine, Plus, Search, Sparkles, Trash2, X } from "lucide-react"
 import type { DateRange } from "react-day-picker"
 
+import { MarkdownContent } from "@/components/common/markdown-content"
 import { HeaderNav } from "@/components/header-nav"
 import { Calendar, CalendarDayButton } from "@/components/ui/calendar"
 import { Button } from "@/components/ui/button"
@@ -746,9 +747,11 @@ export default function RentalPage() {
                           {statusMeta.label}
                         </span>
                       </div>
-                      <p className="h-10 overflow-hidden text-[13px] leading-5 text-gray-600">
-                        {item.description || "물품 설명이 아직 등록되지 않았습니다."}
-                      </p>
+                      <MarkdownContent
+                        content={item.description || "물품 설명이 아직 등록되지 않았습니다."}
+                        compact
+                        className="h-10 overflow-hidden text-[13px] leading-5 text-gray-600"
+                      />
                       <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-gray-600">
                         <span className="rounded-full bg-[#f1f6f9] px-3 py-1.5">총 {item.totalQuantity}개</span>
                         <span className="rounded-full bg-[#f1f6f9] px-3 py-1.5">
@@ -811,6 +814,14 @@ export default function RentalPage() {
                         <span className="rounded-full bg-[#f1f6f9] px-3 py-1.5">총 {selectedItem.totalQuantity}개</span>
                         <span className="rounded-full bg-[#f1f6f9] px-3 py-1.5">최대 {selectedItem.maxRentalDays}일</span>
                       </div>
+                    </div>
+
+                    <div className="rounded-3xl bg-white p-4 shadow-[0_16px_40px_rgba(47,74,91,0.08)]">
+                      <p className="text-sm font-semibold text-gray-800">물품 설명</p>
+                      <MarkdownContent
+                        content={selectedItem.description || "물품 설명이 아직 등록되지 않았습니다."}
+                        className="mt-2 text-sm leading-6 text-gray-600"
+                      />
                     </div>
 
                     <div className="rounded-3xl bg-white p-4 shadow-[0_16px_40px_rgba(47,74,91,0.08)]">

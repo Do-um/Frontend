@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 
+import { MarkdownSupportNote } from "@/components/common/markdown-support-note"
 import { ImageDropzoneField } from "@/components/image-dropzone-field"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -216,6 +217,7 @@ export function ClubContentEditorDialog({
                     }
                     className="min-h-[120px]"
                   />
+                  <MarkdownSupportNote />
                 </label>
 
                 <div className="sm:col-span-2">
@@ -308,12 +310,14 @@ export function ClubContentEditorDialog({
                 </label>
                 <label className="space-y-2">
                   <span className="text-sm font-semibold text-[#243845]">Learn 설명</span>
-                  <Input
+                  <Textarea
                     value={form.learnDescription}
                     onChange={(event) =>
                       setForm((current) => ({ ...current, learnDescription: event.target.value }))
                     }
+                    className="min-h-[96px]"
                   />
+                  <MarkdownSupportNote />
                 </label>
 
                 <label className="space-y-2">
@@ -325,12 +329,14 @@ export function ClubContentEditorDialog({
                 </label>
                 <label className="space-y-2">
                   <span className="text-sm font-semibold text-[#243845]">Grow 설명</span>
-                  <Input
+                  <Textarea
                     value={form.growDescription}
                     onChange={(event) =>
                       setForm((current) => ({ ...current, growDescription: event.target.value }))
                     }
+                    className="min-h-[96px]"
                   />
+                  <MarkdownSupportNote />
                 </label>
 
                 <label className="space-y-2">
@@ -342,12 +348,14 @@ export function ClubContentEditorDialog({
                 </label>
                 <label className="space-y-2">
                   <span className="text-sm font-semibold text-[#243845]">Share 설명</span>
-                  <Input
+                  <Textarea
                     value={form.shareDescription}
                     onChange={(event) =>
                       setForm((current) => ({ ...current, shareDescription: event.target.value }))
                     }
+                    className="min-h-[96px]"
                   />
+                  <MarkdownSupportNote />
                 </label>
 
                 <div className="sm:col-span-2">

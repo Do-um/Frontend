@@ -5,6 +5,7 @@ import Image from "next/image"
 import { useEffect, useState } from "react"
 import { PencilLine, Trash2 } from "lucide-react"
 
+import { MarkdownContent } from "@/components/common/markdown-content"
 import { Button } from "@/components/ui/button"
 import { HeaderNav } from "@/components/header-nav"
 import { useAdminSession } from "@/hooks/use-admin-session"
@@ -202,7 +203,10 @@ export default function RecruitPage() {
                 </div>
               ) : null}
             </div>
-            <p className="mt-2 text-sm text-gray-600">{recruitContent.overviewDescription}</p>
+            <MarkdownContent
+              content={recruitContent.overviewDescription}
+              className="mt-2 text-sm text-gray-600"
+            />
             {error ? (
               <p className="mt-4 rounded-2xl border border-[#f1cccc] bg-[#fff6f6] px-4 py-3 text-sm text-[#9a3b3b]">
                 {error}
@@ -240,7 +244,7 @@ export default function RecruitPage() {
         <div className="mx-auto max-w-3xl px-4">
           <div className="mb-6 text-center">
             <h2 className="mb-2 text-2xl font-bold text-gray-900">{recruitContent.targetSectionTitle}</h2>
-            <p className="text-sm text-gray-600">{recruitContent.targetSectionDescription}</p>
+            <MarkdownContent content={recruitContent.targetSectionDescription} className="text-sm text-gray-600" />
           </div>
 
           <div className="rounded-xl border border-gray-200 bg-white p-8">

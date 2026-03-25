@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 
+import { MarkdownSupportNote } from "@/components/common/markdown-support-note"
 import { Button } from "@/components/ui/button"
 import { ImageDropzoneField } from "@/components/image-dropzone-field"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -318,6 +319,7 @@ export function ActivityEditorDialog({
                     className="min-h-[160px]"
                     placeholder="활동의 목적, 진행 방식, 현장 분위기를 설명해 주세요."
                   />
+                  <MarkdownSupportNote />
                 </label>
 
                 <label className="space-y-2 sm:col-span-2">

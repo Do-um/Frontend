@@ -527,7 +527,15 @@ function normalizeActivityType(value: string | null | undefined): ActivityType {
 
 function isMissingActivityTypeColumnError(error: { message: string } | null) {
   const normalizedMessage = error?.message?.toLowerCase().trim() ?? ""
-  return normalizedMessage.includes("activity_type") && normalizedMessage.includes("does not exist")
+  if (!normalizedMessage.includes("activity_type")) {
+    return false
+  }
+
+  return (
+    normalizedMessage.includes("does not exist") ||
+    normalizedMessage.includes("schema cache") ||
+    normalizedMessage.includes("could not find")
+  )
 }
 
 function inferLegacyActivityType(row: IntroduceRow | LegacyIntroduceRow): ActivityType {
