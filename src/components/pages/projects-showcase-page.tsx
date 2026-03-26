@@ -142,8 +142,8 @@ function ProjectCard({
 
   return (
     <button type="button" onClick={() => onSelect(project)} className="group flex h-full w-full text-left">
-      <Card className="flex h-full w-full flex-col overflow-hidden rounded-[28px] border border-white/80 bg-white/85 py-0 shadow-[0_20px_40px_rgba(37,74,91,0.08)] backdrop-blur-sm transition duration-200 group-hover:-translate-y-1 group-hover:shadow-[0_28px_60px_rgba(37,74,91,0.14)]">
-        <div className="relative aspect-[1.65/1] overflow-hidden bg-[linear-gradient(135deg,#dcecf2,#edf4e8)]">
+      <Card className="flex h-full w-full flex-col overflow-hidden rounded-[22px] border border-white/80 bg-white/85 py-0 shadow-[0_14px_30px_rgba(37,74,91,0.08)] backdrop-blur-sm transition duration-200 group-hover:-translate-y-1 group-hover:shadow-[0_28px_60px_rgba(37,74,91,0.14)] sm:rounded-[28px] sm:shadow-[0_20px_40px_rgba(37,74,91,0.08)]">
+        <div className="relative aspect-[0.94/1] overflow-hidden bg-[linear-gradient(135deg,#dcecf2,#edf4e8)] sm:aspect-[1.65/1]">
           {project.thumbnailUrl ? (
             <img
               src={resolveMediaUrl(project.thumbnailUrl) || ""}
@@ -156,27 +156,30 @@ function ProjectCard({
             </div>
           )}
 
-          <div className="absolute left-4 top-4 flex flex-wrap items-center gap-2">
+          <div className="absolute left-2 top-2 flex max-w-[78%] flex-wrap items-center gap-1 sm:left-4 sm:top-4 sm:max-w-[70%] sm:gap-2">
             {project.pinned ? (
-              <span className="rounded-full bg-[#1f2730] px-3 py-1 text-xs font-semibold text-white">PINNED</span>
+              <span className="rounded-full bg-[#1f2730] px-2.5 py-1 text-[10px] font-semibold text-white sm:px-3 sm:text-xs">
+                PINNED
+              </span>
             ) : null}
-            <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-[#567289] shadow-sm">
+            <span className="rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold text-[#567289] shadow-sm sm:px-3 sm:text-xs">
               {project.teamName || "DO,UM"}
             </span>
           </div>
 
-          <div className="absolute right-4 top-4 flex items-center gap-2 rounded-full bg-[#1f2730]/75 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm">
-            <span>상세보기</span>
-            <ArrowUpRight className="size-3.5" />
+          <div className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-[#1f2730]/75 px-2.5 py-1 text-[10px] font-medium text-white backdrop-blur-sm sm:right-4 sm:top-4 sm:gap-2 sm:px-3 sm:text-xs">
+            <span className="hidden sm:inline">상세보기</span>
+            <span className="sm:hidden">보기</span>
+            <ArrowUpRight className="size-3 sm:size-3.5" />
           </div>
         </div>
 
-        <div className="flex flex-1 flex-col p-5">
-          <div className="flex min-h-[2rem] flex-wrap content-start gap-2">
+        <div className="flex flex-1 flex-col p-3 sm:p-5">
+          <div className="flex min-h-[1.5rem] flex-wrap content-start gap-1 sm:min-h-[2rem] sm:gap-2">
             {projectYears.map((year) => (
               <span
                 key={`${project.projectId}-${year}`}
-                className="rounded-full border border-[#cfe0eb] bg-[#eef6fb] px-3 py-1 text-xs font-semibold text-[#44657b]"
+                className="rounded-full border border-[#cfe0eb] bg-[#eef6fb] px-2.5 py-1 text-[10px] font-semibold text-[#44657b] sm:px-3 sm:text-xs"
               >
                 {year}
               </span>
@@ -184,34 +187,34 @@ function ProjectCard({
             {project.tags.slice(0, 3).map((tag) => (
               <span
                 key={tag}
-                className="rounded-full border border-[#dbe7ef] bg-[#f7fbfd] px-3 py-1 text-xs font-medium text-[#557286]"
+                className="rounded-full border border-[#dbe7ef] bg-[#f7fbfd] px-2.5 py-1 text-[10px] font-medium text-[#557286] sm:px-3 sm:text-xs"
               >
                 #{tag}
               </span>
             ))}
           </div>
 
-          <div className="mt-4 min-h-[6.25rem]">
-            <h2 className="overflow-hidden text-lg font-bold leading-7 text-[#1f2a33] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
+          <div className="mt-3 min-h-[4rem] sm:mt-4 sm:min-h-[6.25rem]">
+            <h2 className="overflow-hidden text-[0.95rem] font-bold leading-6 text-[#1f2a33] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] sm:text-lg sm:leading-7">
               {project.title}
             </h2>
             <MarkdownContent
               content={project.summary}
               compact
-              className="mt-2 max-h-[3rem] overflow-hidden text-sm leading-6 text-[#60717d]"
+              className="mt-1.5 max-h-[2.5rem] overflow-hidden text-[12px] leading-5 text-[#60717d] sm:mt-2 sm:max-h-[3rem] sm:text-sm sm:leading-6"
             />
           </div>
 
-          <div className="mt-auto flex min-h-[5rem] flex-wrap content-start items-start gap-2 pt-5 text-xs text-[#74838c]">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f1f6f9] px-3 py-1.5">
-              <Users className="size-3.5" />
+          <div className="mt-auto flex min-h-[2.5rem] flex-wrap content-start items-start gap-1.5 pt-3 text-[11px] text-[#74838c] sm:min-h-[5rem] sm:gap-2 sm:pt-5 sm:text-xs">
+            <span className="inline-flex items-center gap-1 rounded-full bg-[#f1f6f9] px-2.5 py-1 sm:gap-1.5 sm:px-3 sm:py-1.5">
+              <Users className="size-3 sm:size-3.5" />
               {project.members.length}명
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f1f6f9] px-3 py-1.5">
-              <Images className="size-3.5" />
+            <span className="inline-flex items-center gap-1 rounded-full bg-[#f1f6f9] px-2.5 py-1 sm:gap-1.5 sm:px-3 sm:py-1.5">
+              <Images className="size-3 sm:size-3.5" />
               {galleryImages.length}장
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f1f6f9] px-3 py-1.5">
+            <span className="hidden items-center gap-1.5 rounded-full bg-[#f1f6f9] px-3 py-1.5 sm:inline-flex">
               <CalendarDays className="size-3.5" />
               {formatDate(project.updatedAt)}
             </span>
@@ -224,9 +227,9 @@ function ProjectCard({
 
 function ProjectCardSkeleton() {
   return (
-    <Card className="overflow-hidden rounded-[28px] border border-white/80 bg-white/80 py-0">
-      <div className="aspect-[1.65/1] animate-pulse bg-[#dfe9ee]" />
-      <div className="space-y-4 p-5">
+    <Card className="overflow-hidden rounded-[22px] border border-white/80 bg-white/80 py-0 sm:rounded-[28px]">
+      <div className="aspect-[0.94/1] animate-pulse bg-[#dfe9ee] sm:aspect-[1.65/1]" />
+      <div className="space-y-3 p-3 sm:space-y-4 sm:p-5">
         <div className="flex gap-2">
           <div className="h-6 w-20 animate-pulse rounded-full bg-[#eef2f4]" />
           <div className="h-6 w-16 animate-pulse rounded-full bg-[#eef2f4]" />
@@ -461,7 +464,7 @@ export function ProjectsShowcasePage() {
               ) : null}
 
               {loading ? (
-                <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="grid grid-cols-2 gap-3 sm:gap-5 xl:grid-cols-3">
                   {Array.from({ length: 6 }).map((_, index) => (
                     <ProjectCardSkeleton key={index} />
                   ))}
@@ -503,7 +506,7 @@ export function ProjectsShowcasePage() {
               ) : null}
 
               {!loading && !error && orderedProjects.length ? (
-                <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="grid grid-cols-2 gap-3 sm:gap-5 xl:grid-cols-3">
                   {orderedProjects.map((project) => (
                     <ProjectCard key={project.projectId} project={project} onSelect={openProjectDetail} />
                   ))}

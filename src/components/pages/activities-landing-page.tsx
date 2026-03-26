@@ -276,8 +276,8 @@ function ActivityCard({
 
   return (
     <button type="button" onClick={() => onSelect(activity)} className="group flex h-full w-full text-left">
-      <Card className="flex h-full w-full flex-col overflow-hidden rounded-[28px] border border-white/80 bg-white/85 py-0 shadow-[0_20px_40px_rgba(37,74,91,0.08)] backdrop-blur-sm transition duration-200 group-hover:-translate-y-1 group-hover:shadow-[0_28px_60px_rgba(37,74,91,0.14)]">
-        <div className="relative aspect-[1.6/1] overflow-hidden bg-[linear-gradient(135deg,#dcecf2,#edf4e8)]">
+      <Card className="flex h-full w-full flex-col overflow-hidden rounded-[22px] border border-white/80 bg-white/85 py-0 shadow-[0_14px_30px_rgba(37,74,91,0.08)] backdrop-blur-sm transition duration-200 group-hover:-translate-y-1 group-hover:shadow-[0_28px_60px_rgba(37,74,91,0.14)] sm:rounded-[28px] sm:shadow-[0_20px_40px_rgba(37,74,91,0.08)]">
+        <div className="relative aspect-[0.94/1] overflow-hidden bg-[linear-gradient(135deg,#dcecf2,#edf4e8)] sm:aspect-[1.6/1]">
           {primaryImage ? (
             <img
               src={resolveMediaUrl(primaryImage) || ""}
@@ -289,55 +289,56 @@ function ActivityCard({
               <Image src="/placeholder.svg" alt="" width={96} height={96} className="opacity-55" />
             </div>
           )}
-          <div className="absolute left-4 top-4 flex max-w-[70%] flex-wrap items-center gap-2">
-            <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-[#567289] shadow-sm">
+          <div className="absolute left-2 top-2 flex max-w-[78%] flex-wrap items-center gap-1 sm:left-4 sm:top-4 sm:max-w-[70%] sm:gap-2">
+            <span className="rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold text-[#567289] shadow-sm sm:px-3 sm:text-xs">
               {target.label}
             </span>
             {activityYears.map((year) => (
               <span
                 key={`${activity.id}-${year}`}
-                className="rounded-full border border-white/80 bg-[#7cb8e8]/90 px-3 py-1 text-xs font-semibold text-white shadow-sm"
+                className="rounded-full border border-white/80 bg-[#7cb8e8]/90 px-2.5 py-1 text-[10px] font-semibold text-white shadow-sm sm:px-3 sm:text-xs"
               >
                 {year}
               </span>
             ))}
           </div>
-          <div className="absolute right-4 top-4 flex items-center gap-2 rounded-full bg-[#1f2730]/75 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm">
-            <span>상세보기</span>
-            <ArrowUpRight className="size-3.5" />
+          <div className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-[#1f2730]/75 px-2.5 py-1 text-[10px] font-medium text-white backdrop-blur-sm sm:right-4 sm:top-4 sm:gap-2 sm:px-3 sm:text-xs">
+            <span className="hidden sm:inline">상세보기</span>
+            <span className="sm:hidden">보기</span>
+            <ArrowUpRight className="size-3 sm:size-3.5" />
           </div>
         </div>
 
-        <div className="flex flex-1 flex-col p-5">
-          <div className="min-w-0 min-h-[6.25rem]">
-            <h2 className="overflow-hidden text-lg font-bold leading-7 text-[#1f2a33] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
+        <div className="flex flex-1 flex-col p-3 sm:p-5">
+          <div className="min-w-0 min-h-[4rem] sm:min-h-[6.25rem]">
+            <h2 className="overflow-hidden text-[0.95rem] font-bold leading-6 text-[#1f2a33] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] sm:text-lg sm:leading-7">
               {activity.activityId}
             </h2>
             <MarkdownContent
               content={activity.description}
               compact
-              className="mt-2 max-h-[3rem] overflow-hidden text-sm leading-6 text-[#60717d]"
+              className="mt-1.5 max-h-[2.5rem] overflow-hidden text-[12px] leading-5 text-[#60717d] sm:mt-2 sm:max-h-[3rem] sm:text-sm sm:leading-6"
             />
           </div>
 
-          <div className="mt-5 flex min-h-[5rem] flex-wrap content-start items-start gap-2 text-xs text-[#74838c]">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f1f6f9] px-3 py-1.5">
-              <CalendarDays className="size-3.5" />
+          <div className="mt-3 flex min-h-[2.5rem] flex-wrap content-start items-start gap-1.5 text-[11px] text-[#74838c] sm:mt-5 sm:min-h-[5rem] sm:gap-2 sm:text-xs">
+            <span className="inline-flex items-center gap-1 rounded-full bg-[#f1f6f9] px-2.5 py-1 sm:gap-1.5 sm:px-3 sm:py-1.5">
+              <CalendarDays className="size-3 sm:size-3.5" />
               {formatActivityPeriod(activity.activityDate)}
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f1f6f9] px-3 py-1.5">
-              <Images className="size-3.5" />
+            <span className="inline-flex items-center gap-1 rounded-full bg-[#f1f6f9] px-2.5 py-1 sm:gap-1.5 sm:px-3 sm:py-1.5">
+              <Images className="size-3 sm:size-3.5" />
               {activity.activityImages.length}장
             </span>
             {participantSummary ? (
-              <span className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-[#f1f6f9] px-3 py-1.5">
+              <span className="hidden max-w-full items-center gap-1.5 rounded-full bg-[#f1f6f9] px-3 py-1.5 sm:inline-flex">
                 <Users className="size-3.5" />
                 <span className="max-w-[12rem] truncate sm:max-w-[14rem]">{participantSummary}</span>
               </span>
             ) : null}
           </div>
 
-          <div className="mt-auto flex items-center justify-between gap-3 pt-5 text-xs text-[#74838c]">
+          <div className="mt-auto hidden items-center justify-between gap-3 pt-5 text-xs text-[#74838c] sm:flex">
             <div className="flex items-center gap-1.5">
               <Clock3 className="size-3.5" />
               <span>{formatAbsoluteDate(activity.createdAt)}</span>
@@ -352,9 +353,9 @@ function ActivityCard({
 
 function ActivityCardSkeleton() {
   return (
-    <Card className="overflow-hidden rounded-[28px] border border-white/80 bg-white/80 py-0">
-      <div className="aspect-[1.6/1] animate-pulse bg-[#dfe9ee]" />
-      <div className="space-y-4 p-5">
+    <Card className="overflow-hidden rounded-[22px] border border-white/80 bg-white/80 py-0 sm:rounded-[28px]">
+      <div className="aspect-[0.94/1] animate-pulse bg-[#dfe9ee] sm:aspect-[1.6/1]" />
+      <div className="space-y-3 p-3 sm:space-y-4 sm:p-5">
         <div className="h-5 w-3/4 animate-pulse rounded-full bg-[#e8eef1]" />
         <div className="h-4 w-full animate-pulse rounded-full bg-[#eef2f4]" />
         <div className="h-4 w-2/3 animate-pulse rounded-full bg-[#eef2f4]" />
@@ -615,7 +616,7 @@ export function ActivitiesLandingPage({
               ) : null}
 
               {loading ? (
-                <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="grid grid-cols-2 gap-3 sm:gap-5 xl:grid-cols-3">
                   {Array.from({ length: PAGE_SIZE }).map((_, index) => (
                     <ActivityCardSkeleton key={index} />
                   ))}
@@ -647,7 +648,7 @@ export function ActivitiesLandingPage({
 
               {!loading && !error && currentActivities.length ? (
                 <>
-                  <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                  <div className="grid grid-cols-2 gap-3 sm:gap-5 xl:grid-cols-3">
                     {currentActivities.map((activity) => (
                       <ActivityCard key={activity.id} activity={activity} onSelect={openActivityDetail} />
                     ))}

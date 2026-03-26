@@ -154,7 +154,7 @@ export default function RecruitPage() {
 
       <section className="relative overflow-hidden py-10 sm:py-16">
         <div className="mx-auto max-w-4xl px-4">
-          <div className="flex items-center justify-center" style={{ minHeight: "260px" }}>
+          <div className="flex items-center justify-center" style={{ minHeight: "220px" }}>
             <div className="animate-float">
               <div
                 className="transition-transform duration-100 ease-out"
@@ -166,7 +166,7 @@ export default function RecruitPage() {
                   width={500}
                   height={350}
                   priority
-                  className="h-auto w-[min(72vw,280px)] select-none sm:w-[360px] md:w-[440px] lg:w-[500px]"
+                  className="h-auto w-[min(56vw,210px)] select-none sm:w-[320px] md:w-[440px] lg:w-[500px]"
                 />
               </div>
             </div>

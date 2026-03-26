@@ -685,7 +685,7 @@ export default function RentalPage() {
               대여 물품 정보를 불러오는 중입니다...
             </div>
           ) : filteredItems.length ? (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
               {filteredItems.map((item) => {
                 const statusMeta = getItemStatusMeta(item)
                 const itemImageUrl = resolveMediaUrl(item.itemImage) || "/placeholder.svg"
@@ -693,7 +693,7 @@ export default function RentalPage() {
                 return (
                   <article
                     key={item.itemId}
-                    className={`overflow-hidden rounded-2xl bg-white shadow-[0_8px_20px_rgba(0,0,0,0.08)] transition-transform duration-200 hover:-translate-y-1 ${
+                    className={`overflow-hidden rounded-[18px] bg-white shadow-[0_8px_20px_rgba(0,0,0,0.08)] transition-transform duration-200 hover:-translate-y-1 sm:rounded-2xl ${
                       selectedItemId === item.itemId ? "ring-2 ring-[#9ec6df] shadow-[0_18px_34px_rgba(72,122,151,0.18)]" : ""
                     }`}
                     onClick={() => handleOpen(item.itemId)}
@@ -706,16 +706,16 @@ export default function RentalPage() {
                       }
                     }}
                   >
-                    <div className="relative h-32 w-full bg-[#f3f3f3] sm:h-36">
+                    <div className="relative h-24 w-full bg-[#f3f3f3] sm:h-36">
                       <Image
                         src={itemImageUrl}
                         alt={item.name}
                         fill
                         className="object-cover"
-                        sizes="(min-width: 1024px) 320px, (min-width: 768px) 45vw, 90vw"
+                        sizes="(min-width: 1280px) 240px, (min-width: 640px) 45vw, 48vw"
                       />
                       {canManageRentalItems ? (
-                        <div className="absolute right-3 top-3 z-10 flex items-center gap-2">
+                        <div className="absolute right-2 top-2 z-10 flex items-center gap-1.5 sm:right-3 sm:top-3 sm:gap-2">
                           <Button
                             type="button"
                             variant="ghost"
@@ -746,15 +746,19 @@ export default function RentalPage() {
                         </div>
                       ) : null}
                     </div>
-                    <div className="space-y-2.5 px-4 py-3">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <h3 className="text-base font-semibold text-gray-900">{item.name}</h3>
-                          <p className="mt-0.5 text-[11px] font-medium text-[#7b8f99]">
+                    <div className="space-y-2 px-3 py-3 sm:space-y-2.5 sm:px-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <h3 className="overflow-hidden text-sm font-semibold text-gray-900 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] sm:text-base">
+                            {item.name}
+                          </h3>
+                          <p className="mt-0.5 text-[10px] font-medium text-[#7b8f99] sm:text-[11px]">
                             {item.category}
                           </p>
                         </div>
-                        <span className={`flex items-center gap-1.5 text-[12px] font-medium ${statusMeta.textClassName}`}>
+                        <span
+                          className={`shrink-0 flex items-center gap-1 text-[10px] font-medium sm:gap-1.5 sm:text-[12px] ${statusMeta.textClassName}`}
+                        >
                           <span className={`h-2 w-2 rounded-full ${statusMeta.dotClassName}`} />
                           {statusMeta.label}
                         </span>
@@ -762,18 +766,18 @@ export default function RentalPage() {
                       <MarkdownContent
                         content={item.description || "물품 설명이 아직 등록되지 않았습니다."}
                         compact
-                        className="h-10 overflow-hidden text-[13px] leading-5 text-gray-600"
+                        className="h-8 overflow-hidden text-[12px] leading-4 text-gray-600 sm:h-10 sm:text-[13px] sm:leading-5"
                       />
-                      <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-gray-600">
-                        <span className="rounded-full bg-[#f1f6f9] px-3 py-1.5">총 {item.totalQuantity}개</span>
-                        <span className="rounded-full bg-[#f1f6f9] px-3 py-1.5">
+                      <div className="flex flex-wrap items-center gap-1 text-[10px] text-gray-600 sm:gap-1.5 sm:text-[11px]">
+                        <span className="rounded-full bg-[#f1f6f9] px-2.5 py-1 sm:px-3 sm:py-1.5">총 {item.totalQuantity}개</span>
+                        <span className="rounded-full bg-[#f1f6f9] px-2.5 py-1 sm:px-3 sm:py-1.5">
                           오늘 대여 가능 {item.availableQuantity}개
                         </span>
-                        <span className="rounded-full bg-[#f1f6f9] px-3 py-1.5">
+                        <span className="hidden rounded-full bg-[#f1f6f9] px-3 py-1.5 sm:inline-block">
                           최대 {item.maxRentalDays}일
                         </span>
                         {item.activeBorrowerNames.length ? (
-                          <span className="rounded-full bg-[#fff4f1] px-3 py-1.5 text-[#9a5a43]">
+                          <span className="hidden rounded-full bg-[#fff4f1] px-3 py-1.5 text-[#9a5a43] sm:inline-block">
                             대여자 {buildBorrowerSummary(item.activeBorrowerNames)}
                           </span>
                         ) : null}
