@@ -79,19 +79,19 @@ export function HeaderNav() {
   }
 
   const desktopLinkClass =
-    "inline-flex h-11 items-center gap-1 rounded-full px-3 text-sm font-semibold leading-none text-[#18232d] transition-colors hover:text-[#47708a]"
+    "inline-flex h-11 items-center px-3 text-sm font-semibold leading-none text-[#18232d] transition-colors hover:text-[#47708a]"
 
   const mobileLinkClass =
     "flex min-h-11 items-center justify-between rounded-2xl px-4 py-3 text-sm font-semibold text-[#18232d] transition-colors hover:bg-[#f3f8fc]"
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-black/8 bg-white/72 px-4 py-3 backdrop-blur-md sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-50 w-full border-b border-black/8 bg-white/72 px-4 py-3 backdrop-blur-md sm:px-6 lg:relative lg:top-auto lg:z-40 lg:bg-transparent lg:px-6 xl:px-8">
       <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-4">
         <Link href="/" className="flex h-11 w-11 items-center justify-center transition-opacity hover:opacity-80 sm:h-12 sm:w-12">
           <Image src="/logo.png" alt="Do,um 로고" width={45} height={45} priority />
         </Link>
 
-        <nav className="hidden items-center gap-1 lg:flex">
+        <nav className="hidden items-center gap-4 lg:flex xl:gap-6">
           <div
             className="relative flex h-11 items-center after:absolute after:left-0 after:top-full after:h-3 after:w-full after:content-['']"
             onMouseEnter={() => handleMenuOpen("intro")}
@@ -104,7 +104,7 @@ export function HeaderNav() {
               className={desktopLinkClass}
             >
               소개
-              <ChevronDown className={`size-4 transition-transform ${openMenu === "intro" ? "rotate-180" : ""}`} />
+              <ChevronDown className={`ml-1 size-4 transition-transform ${openMenu === "intro" ? "rotate-180" : ""}`} />
             </button>
 
             {openMenu === "intro" ? (
@@ -137,7 +137,7 @@ export function HeaderNav() {
               className={desktopLinkClass}
             >
               활동
-              <ChevronDown className={`size-4 transition-transform ${openMenu === "activities" ? "rotate-180" : ""}`} />
+              <ChevronDown className={`ml-1 size-4 transition-transform ${openMenu === "activities" ? "rotate-180" : ""}`} />
             </button>
 
             {openMenu === "activities" ? (
