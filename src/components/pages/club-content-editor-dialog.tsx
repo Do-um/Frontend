@@ -31,7 +31,7 @@ const emptyFormState: FormState = {
   introTitle: "",
   introLead: "",
   introDescription: "",
-  heroBannerImageUrl: "/hero-banner.png",
+  heroBannerImageUrl: "/hero-banner.svg",
   activitySectionTitle: "",
   historySectionTitle: "",
   studyCaption: "",
@@ -144,7 +144,7 @@ export function ClubContentEditorDialog({
           heroBannerImageUrl:
             heroBannerAssets.find((asset) => asset.persistedUrl)?.persistedUrl ||
             uploadedHeroBannerUrls[0] ||
-            "/hero-banner.png",
+            "/hero-banner.svg",
           activitySectionTitle: form.activitySectionTitle.trim(),
           historySectionTitle: form.historySectionTitle.trim(),
           studyCaption: form.studyCaption.trim(),

@@ -55,7 +55,7 @@ begin
   return query
   select distinct
     r.rental_item_id,
-    nullif(trim(u.name), '')
+    nullif(trim(u.name), '') as reserved_by_name
   from public.rentals r
   left join public.users u on u.id::text = r.user_id
   where r.rental_item_id = any(target_item_ids)

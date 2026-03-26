@@ -245,7 +245,7 @@ export default function Home() {
         <div className="relative flex min-h-[calc(100vh-80px)] flex-col items-center justify-center px-8 pb-10 pt-6">
           <div className="flex w-full justify-center">
             <Image
-              src={resolveMediaUrl(clubContent.heroBannerImageUrl) || "/hero-banner.png"}
+              src={resolveMediaUrl(clubContent.heroBannerImageUrl) || "/hero-banner.svg"}
               alt="DO,UM 배너"
               width={1200}
               height={200}
