@@ -337,42 +337,39 @@ export default function Home() {
                   {programs.map((program) => (
                     <div
                       key={program.id}
-                      className="min-h-[13.5rem] rounded-[24px] border border-[#cfe2f2] bg-[linear-gradient(180deg,#edf5fc_0%,#e6f0f8_100%)] p-5 shadow-[0_10px_26px_rgba(87,122,153,0.12)] sm:h-[13.5rem]"
+                      className="relative min-h-[13.5rem] rounded-[24px] border border-[#cfe2f2] bg-[linear-gradient(180deg,#edf5fc_0%,#e6f0f8_100%)] p-5 shadow-[0_10px_26px_rgba(87,122,153,0.12)] sm:h-[13.5rem]"
                     >
-                      <div className="flex h-full items-start justify-between gap-3">
-                        <div className="flex h-full min-w-0 flex-1 flex-col">
-                          <p className="max-w-[18ch] min-h-[2.75rem] overflow-hidden text-[1.05rem] font-bold leading-[1.35] tracking-[-0.02em] text-[#1c2a36] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [text-wrap:balance]">
-                            {program.title}
-                          </p>
-                          <MarkdownContent
-                            content={program.description}
-                            compact
-                            className="mt-3 max-w-[34ch] flex-1 overflow-hidden text-[0.95rem] leading-7 text-[#52626d] [text-wrap:pretty]"
-                          />
+                      {isAdmin ? (
+                        <div className="absolute right-4 top-4 flex items-center gap-1.5">
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => setProgramEditorState({ mode: "edit", program })}
+                            className="rounded-full text-[#355264] hover:bg-white/70"
+                          >
+                            <PencilLine className="size-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => void handleProgramDelete(program)}
+                            disabled={deletingProgramId === program.id}
+                            className="rounded-full text-[#a44a4a] hover:bg-white/70"
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
                         </div>
-                        <div className="flex w-[72px] shrink-0 justify-end self-start">
-                          {isAdmin ? (
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="ghost"
-                                size="icon-sm"
-                                onClick={() => setProgramEditorState({ mode: "edit", program })}
-                                className="rounded-full text-[#355264] hover:bg-white/70"
-                              >
-                                <PencilLine className="size-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon-sm"
-                                onClick={() => void handleProgramDelete(program)}
-                                disabled={deletingProgramId === program.id}
-                                className="rounded-full text-[#a44a4a] hover:bg-white/70"
-                              >
-                                <Trash2 className="size-4" />
-                              </Button>
-                            </div>
-                          ) : null}
-                        </div>
+                      ) : null}
+
+                      <div className={`flex h-full min-w-0 flex-col ${isAdmin ? "pr-16" : ""}`}>
+                        <p className="min-h-[2.75rem] overflow-hidden text-[1.05rem] font-bold leading-[1.35] tracking-[-0.02em] text-[#1c2a36] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [text-wrap:balance]">
+                          {program.title}
+                        </p>
+                        <MarkdownContent
+                          content={program.description}
+                          compact
+                          className="mt-3 flex-1 overflow-hidden text-[0.95rem] leading-7 text-[#52626d] [text-wrap:pretty]"
+                        />
                       </div>
                     </div>
                   ))}

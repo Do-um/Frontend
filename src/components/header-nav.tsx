@@ -109,13 +109,13 @@ export function HeaderNav() {
 
             {openMenu === "intro" ? (
               <div className="absolute left-1/2 top-full z-50 -translate-x-1/2 pt-2">
-                <div className="min-w-[11rem] rounded-2xl border border-[#dbe7ef] bg-white/96 p-2 shadow-[0_18px_40px_rgba(36,64,84,0.16)]">
+                <div className="min-w-[8.5rem] rounded-2xl border border-[#dbe7ef] bg-white/96 p-1.5 shadow-[0_18px_40px_rgba(36,64,84,0.16)]">
                   {introLinks.map((item) => (
                     <Link
                       key={item.href}
                       href={item.href}
                       onClick={() => setOpenMenu(null)}
-                      className="flex min-h-10 items-center rounded-xl px-3 py-2 text-sm font-medium text-[#223541] transition-colors hover:bg-[#f4f9fc]"
+                      className="flex min-h-9 items-center rounded-xl px-2.5 py-1.5 text-sm font-medium text-[#223541] transition-colors hover:bg-[#f4f9fc]"
                     >
                       {item.label}
                     </Link>
@@ -142,13 +142,13 @@ export function HeaderNav() {
 
             {openMenu === "activities" ? (
               <div className="absolute left-1/2 top-full z-50 -translate-x-1/2 pt-2">
-                <div className="min-w-[11rem] rounded-2xl border border-[#dbe7ef] bg-white/96 p-2 shadow-[0_18px_40px_rgba(36,64,84,0.16)]">
+                <div className="min-w-[8.5rem] rounded-2xl border border-[#dbe7ef] bg-white/96 p-1.5 shadow-[0_18px_40px_rgba(36,64,84,0.16)]">
                   {activityLinks.map((item) => (
                     <Link
                       key={item.href}
                       href={item.href}
                       onClick={() => setOpenMenu(null)}
-                      className="flex min-h-10 items-center rounded-xl px-3 py-2 text-sm font-medium text-[#223541] transition-colors hover:bg-[#f4f9fc]"
+                      className="flex min-h-9 items-center rounded-xl px-2.5 py-1.5 text-sm font-medium text-[#223541] transition-colors hover:bg-[#f4f9fc]"
                     >
                       {item.label}
                     </Link>
