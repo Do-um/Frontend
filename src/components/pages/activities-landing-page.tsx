@@ -289,7 +289,7 @@ function ActivityCard({
               <Image src="/placeholder.svg" alt="" width={96} height={96} className="opacity-55" />
             </div>
           )}
-          <div className="absolute left-2 top-2 flex max-w-[78%] flex-wrap items-center gap-1 sm:left-4 sm:top-4 sm:max-w-[70%] sm:gap-2">
+          <div className="absolute left-2 top-2 right-2 flex flex-wrap items-center gap-1 sm:left-4 sm:right-4 sm:top-4 sm:gap-2">
             <span className="rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold text-[#567289] shadow-sm sm:px-3 sm:text-xs">
               {target.label}
             </span>
@@ -301,11 +301,6 @@ function ActivityCard({
                 {year}
               </span>
             ))}
-          </div>
-          <div className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-[#1f2730]/75 px-2.5 py-1 text-[10px] font-medium text-white backdrop-blur-sm sm:right-4 sm:top-4 sm:gap-2 sm:px-3 sm:text-xs">
-            <span className="hidden sm:inline">상세보기</span>
-            <span className="sm:hidden">보기</span>
-            <ArrowUpRight className="size-3 sm:size-3.5" />
           </div>
         </div>
 
@@ -338,12 +333,11 @@ function ActivityCard({
             ) : null}
           </div>
 
-          <div className="mt-auto hidden items-center justify-between gap-3 pt-5 text-xs text-[#74838c] sm:flex">
+          <div className="mt-auto hidden items-center gap-3 pt-5 text-xs text-[#74838c] sm:flex">
             <div className="flex items-center gap-1.5">
               <Clock3 className="size-3.5" />
               <span>{formatAbsoluteDate(activity.createdAt)}</span>
             </div>
-            <div className="text-[#4d6473]">클릭해서 상세 보기</div>
           </div>
         </div>
       </Card>

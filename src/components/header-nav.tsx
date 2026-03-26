@@ -32,7 +32,7 @@ export function HeaderNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mobileOpenMenu, setMobileOpenMenu] = useState<"intro" | "activities" | null>(null)
   const closeTimerRef = useRef<number | null>(null)
-  const { isAdmin, isLoggedIn, loading: sessionLoading } = useAdminSession()
+  const { isAdmin, isDoumMember, isLoggedIn, loading: sessionLoading } = useAdminSession()
 
   const clearCloseTimer = () => {
     if (closeTimerRef.current !== null) {
@@ -83,6 +83,8 @@ export function HeaderNav() {
 
   const mobileLinkClass =
     "flex min-h-11 items-center justify-between rounded-2xl px-4 py-3 text-sm font-semibold text-[#18232d] transition-colors hover:bg-[#f3f8fc]"
+
+  const visibleMainLinks = isDoumMember ? [...mainLinks, { href: "/bet", label: "내기" }] : mainLinks
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-black/8 bg-white/72 px-4 py-3 backdrop-blur-md sm:px-6 lg:relative lg:top-auto lg:z-40 lg:bg-transparent lg:px-6 xl:px-8">
@@ -158,7 +160,7 @@ export function HeaderNav() {
             ) : null}
           </div>
 
-          {mainLinks.map((item) => (
+          {visibleMainLinks.map((item) => (
             <Link key={item.href} href={item.href} className={desktopLinkClass}>
               {item.label}
             </Link>
@@ -249,7 +251,7 @@ export function HeaderNav() {
               </div>
 
               <div className="grid gap-2 sm:grid-cols-2">
-                {mainLinks.map((item) => (
+                {visibleMainLinks.map((item) => (
                   <Link key={item.href} href={item.href} className={`${mobileLinkClass} border border-[#e5edf3] bg-white`}>
                     {item.label}
                   </Link>
