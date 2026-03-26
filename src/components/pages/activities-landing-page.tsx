@@ -236,6 +236,32 @@ function ActivityMetaItem({
   )
 }
 
+function ActivityCompactMetaItem({
+  icon: Icon,
+  label,
+  value,
+  wide = false,
+}: {
+  icon: LucideIcon
+  label: string
+  value: string
+  wide?: boolean
+}) {
+  return (
+    <div
+      className={`shrink-0 rounded-2xl border border-[#d7e5ea] bg-white/88 p-3 shadow-[0_10px_24px_rgba(47,74,91,0.06)] ${
+        wide ? "min-w-[15rem]" : "min-w-[10.75rem]"
+      }`}
+    >
+      <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#7b8f99]">
+        <Icon className="size-3.5 shrink-0" />
+        <span>{label}</span>
+      </div>
+      <p className="mt-2 text-sm font-semibold leading-5 text-[#223541]">{value}</p>
+    </div>
+  )
+}
+
 function ActivityCard({
   activity,
   onSelect,
@@ -692,16 +718,16 @@ export function ActivitiesLandingPage({
                       활동 사진과 설명, 날짜, 장소, 참여 인원 정보를 보여주는 상세 모달
                     </DialogDescription>
 
-                    <div className="flex h-full flex-col gap-4">
+                    <div className="flex h-full flex-col gap-3 sm:gap-4">
                       <div className="relative overflow-hidden rounded-[28px] bg-white/65 shadow-[0_24px_60px_rgba(44,71,88,0.12)]">
                         {activeImage ? (
                           <img
                             src={resolveMediaUrl(activeImage) || ""}
                             alt={`${selectedActivity.activityId} 대표 이미지`}
-                            className="h-[220px] w-full object-cover sm:h-[360px] xl:h-[520px]"
+                            className="h-[280px] w-full object-cover sm:h-[360px] xl:h-[520px]"
                           />
                         ) : (
-                          <div className="flex h-[220px] items-center justify-center sm:h-[360px] xl:h-[520px]">
+                          <div className="flex h-[280px] items-center justify-center sm:h-[360px] xl:h-[520px]">
                             <Image src="/placeholder.svg" alt="" width={120} height={120} className="opacity-45" />
                           </div>
                         )}
@@ -711,7 +737,7 @@ export function ActivitiesLandingPage({
                       </div>
 
                       {selectedImages.length > 1 ? (
-                        <div className="flex gap-3 overflow-x-auto pb-1">
+                        <div className="flex gap-2 overflow-x-auto pb-1 sm:gap-3">
                           {selectedImages.map((imageUrl, index) => {
                             const isActive = index === activeImageIndex
 
@@ -720,7 +746,7 @@ export function ActivitiesLandingPage({
                                 key={`${imageUrl}-${index}`}
                                 type="button"
                                 onClick={() => setActiveImageIndex(index)}
-                                className={`w-24 shrink-0 overflow-hidden rounded-[20px] border bg-white/80 transition sm:w-28 ${
+                                className={`w-20 shrink-0 overflow-hidden rounded-[18px] border bg-white/80 transition sm:w-28 sm:rounded-[20px] ${
                                   isActive
                                     ? "border-[#1f2730] shadow-[0_16px_30px_rgba(31,39,48,0.18)]"
                                     : "border-white/70 hover:-translate-y-0.5 hover:shadow-[0_12px_24px_rgba(47,74,91,0.12)]"
@@ -729,7 +755,7 @@ export function ActivitiesLandingPage({
                                 <img
                                   src={resolveMediaUrl(imageUrl) || ""}
                                   alt={`${selectedActivity.activityId} 썸네일 ${index + 1}`}
-                                  className="h-24 w-full object-cover sm:h-28"
+                                  className="h-20 w-full object-cover sm:h-28"
                                 />
                               </button>
                             )
@@ -739,7 +765,7 @@ export function ActivitiesLandingPage({
                     </div>
                   </div>
 
-                  <div className="overflow-y-auto p-5 sm:p-8">
+                  <div className="overflow-y-auto p-4 sm:p-8">
                     <div className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#617783]">
                       <Sparkles className="size-3.5" />
                       Activity Detail
@@ -791,10 +817,38 @@ export function ActivitiesLandingPage({
                     </div>
                     <MarkdownContent
                       content={selectedActivity.description}
-                      className="mt-4 text-sm leading-7 text-[#576a75] sm:text-base"
+                      className="mt-3 text-sm leading-6 text-[#576a75] sm:mt-4 sm:text-base sm:leading-7"
                     />
 
-                    <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                    <div className="-mx-1 mt-6 flex gap-2 overflow-x-auto px-1 pb-1 sm:hidden">
+                      <ActivityCompactMetaItem
+                        icon={CalendarDays}
+                        label="Date"
+                        value={formatActivityPeriod(selectedActivity.activityDate)}
+                        wide
+                      />
+                      <ActivityCompactMetaItem
+                        icon={Users}
+                        label="People"
+                        value={
+                          selectedActivity.participantNames.length
+                            ? formatParticipantNames(selectedActivity.participantNames)
+                            : selectedActivity.participantCount !== null &&
+                                selectedActivity.participantCount !== undefined
+                              ? `${selectedActivity.participantCount}명`
+                              : "참여 정보 없음"
+                        }
+                        wide
+                      />
+                      <ActivityCompactMetaItem
+                        icon={MapPin}
+                        label="Place"
+                        value={selectedActivity.location ?? "활동 장소 정보 없음"}
+                        wide
+                      />
+                    </div>
+
+                    <div className="mt-8 hidden grid-cols-1 gap-3 sm:grid sm:grid-cols-2 xl:grid-cols-1">
                       <ActivityMetaItem
                         icon={CalendarDays}
                         label="Activity Date"
@@ -820,25 +874,41 @@ export function ActivitiesLandingPage({
                     </div>
 
                     {selectedActivity.participantNames.length ? (
-                      <div className="mt-8 rounded-[28px] border border-[#dae6eb] bg-white/78 p-5 shadow-[0_16px_40px_rgba(47,74,91,0.06)]">
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7b8f99]">
-                          참여자 목록
-                        </p>
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          {selectedActivity.participantNames.map((name, index) => (
-                            <span
-                              key={`${name}-${index}`}
-                              className="rounded-full bg-[#eef4f7] px-3 py-1.5 text-sm font-medium text-[#294255]"
-                            >
-                              {name}
-                            </span>
-                          ))}
+                      <>
+                        <details className="mt-6 rounded-[24px] border border-[#dae6eb] bg-white/78 p-4 shadow-[0_14px_36px_rgba(47,74,91,0.05)] sm:hidden">
+                          <summary className="cursor-pointer text-sm font-semibold text-[#415766]">참여자 목록 보기</summary>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {selectedActivity.participantNames.map((name, index) => (
+                              <span
+                                key={`${name}-${index}`}
+                                className="rounded-full bg-[#eef4f7] px-3 py-1.5 text-sm font-medium text-[#294255]"
+                              >
+                                {name}
+                              </span>
+                            ))}
+                          </div>
+                        </details>
+
+                        <div className="mt-8 hidden rounded-[28px] border border-[#dae6eb] bg-white/78 p-5 shadow-[0_16px_40px_rgba(47,74,91,0.06)] sm:block">
+                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7b8f99]">
+                            참여자 목록
+                          </p>
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            {selectedActivity.participantNames.map((name, index) => (
+                              <span
+                                key={`${name}-${index}`}
+                                className="rounded-full bg-[#eef4f7] px-3 py-1.5 text-sm font-medium text-[#294255]"
+                              >
+                                {name}
+                              </span>
+                            ))}
+                          </div>
                         </div>
-                      </div>
+                      </>
                     ) : null}
 
                     {selectedActivityTarget ? (
-                      <div className="mt-8">
+                      <div className="mt-6 sm:mt-8">
                         <Button
                           asChild
                           className="w-full rounded-full bg-[#1f2730] px-5 text-white shadow-sm hover:bg-[#2c3743] sm:w-auto"

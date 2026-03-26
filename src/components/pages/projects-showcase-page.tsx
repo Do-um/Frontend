@@ -104,6 +104,32 @@ function ProjectMetaItem({
   )
 }
 
+function ProjectCompactMetaItem({
+  icon: Icon,
+  label,
+  value,
+  wide = false,
+}: {
+  icon: LucideIcon
+  label: string
+  value: string
+  wide?: boolean
+}) {
+  return (
+    <div
+      className={`shrink-0 rounded-2xl border border-[#d7e5ea] bg-white/88 p-3 shadow-[0_10px_24px_rgba(47,74,91,0.06)] ${
+        wide ? "min-w-[15rem]" : "min-w-[10.75rem]"
+      }`}
+    >
+      <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#7b8f99]">
+        <Icon className="size-3.5 shrink-0" />
+        <span>{label}</span>
+      </div>
+      <p className="mt-2 text-sm font-semibold leading-5 text-[#223541]">{value}</p>
+    </div>
+  )
+}
+
 function ProjectCard({
   project,
   onSelect,
@@ -507,23 +533,23 @@ export function ProjectsShowcasePage() {
                       프로젝트 이미지와 설명, 링크, 멤버, 기간 정보를 보여주는 상세 모달
                     </DialogDescription>
 
-                    <div className="flex h-full flex-col gap-4">
+                    <div className="flex h-full flex-col gap-3 sm:gap-4">
                       <div className="relative overflow-hidden rounded-[28px] bg-white/65 shadow-[0_24px_60px_rgba(44,71,88,0.12)]">
                         {activeImage ? (
                           <img
                             src={resolveMediaUrl(activeImage) || ""}
                             alt={`${selectedProject.title} 대표 이미지`}
-                            className="h-[220px] w-full object-cover sm:h-[360px] xl:h-[520px]"
+                            className="h-[280px] w-full object-cover sm:h-[360px] xl:h-[520px]"
                           />
                         ) : (
-                          <div className="flex h-[220px] items-center justify-center sm:h-[360px] xl:h-[520px]">
+                          <div className="flex h-[280px] items-center justify-center sm:h-[360px] xl:h-[520px]">
                             <FolderOpen className="size-14 text-[#6f8590]" />
                           </div>
                         )}
                       </div>
 
                       {selectedImages.length > 1 ? (
-                        <div className="flex gap-3 overflow-x-auto pb-1">
+                        <div className="flex gap-2 overflow-x-auto pb-1 sm:gap-3">
                           {selectedImages.map((imageUrl, index) => {
                             const isActive = index === activeImageIndex
 
@@ -532,7 +558,7 @@ export function ProjectsShowcasePage() {
                                 key={`${imageUrl}-${index}`}
                                 type="button"
                                 onClick={() => setActiveImageIndex(index)}
-                                className={`w-24 shrink-0 overflow-hidden rounded-[20px] border bg-white/80 transition sm:w-28 ${
+                                className={`w-20 shrink-0 overflow-hidden rounded-[18px] border bg-white/80 transition sm:w-28 sm:rounded-[20px] ${
                                   isActive
                                     ? "border-[#1f2730] shadow-[0_16px_30px_rgba(31,39,48,0.18)]"
                                     : "border-white/70 hover:-translate-y-0.5 hover:shadow-[0_12px_24px_rgba(47,74,91,0.12)]"
@@ -541,7 +567,7 @@ export function ProjectsShowcasePage() {
                                 <img
                                   src={resolveMediaUrl(imageUrl) || ""}
                                   alt={`${selectedProject.title} 썸네일 ${index + 1}`}
-                                  className="h-24 w-full object-cover sm:h-28"
+                                  className="h-20 w-full object-cover sm:h-28"
                                 />
                               </button>
                             )
@@ -551,7 +577,7 @@ export function ProjectsShowcasePage() {
                     </div>
                   </div>
 
-                  <div className="overflow-y-auto p-5 sm:p-8">
+                  <div className="overflow-y-auto p-4 sm:p-8">
                     <div className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#617783]">
                       <Sparkles className="size-3.5" />
                       Project Detail
@@ -614,14 +640,33 @@ export function ProjectsShowcasePage() {
                     </div>
                     <MarkdownContent
                       content={selectedProject.summary}
-                      className="mt-3 text-base leading-7 text-[#60717d]"
+                      className="mt-3 text-[15px] leading-6 text-[#60717d] sm:text-base sm:leading-7"
                     />
                     <MarkdownContent
                       content={selectedProject.description}
-                      className="mt-4 text-sm leading-7 text-[#576a75] sm:text-base"
+                      className="mt-3 text-sm leading-6 text-[#576a75] sm:mt-4 sm:text-base sm:leading-7"
                     />
 
-                    <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                    <div className="-mx-1 mt-6 flex gap-2 overflow-x-auto px-1 pb-1 sm:hidden">
+                      <ProjectCompactMetaItem
+                        icon={Users}
+                        label="Members"
+                        value={selectedProject.members.length ? `${selectedProject.members.length}명` : "멤버 정보 없음"}
+                      />
+                      <ProjectCompactMetaItem
+                        icon={CalendarDays}
+                        label="Period"
+                        value={formatPeriod(selectedProject)}
+                        wide
+                      />
+                      <ProjectCompactMetaItem
+                        icon={FolderOpen}
+                        label="Team"
+                        value={selectedProject.teamName || "DO,UM"}
+                      />
+                    </div>
+
+                    <div className="mt-8 hidden grid-cols-1 gap-3 sm:grid sm:grid-cols-2 xl:grid-cols-1">
                       <ProjectMetaItem
                         icon={Users}
                         label="Members"
@@ -644,26 +689,42 @@ export function ProjectsShowcasePage() {
                     </div>
 
                     {selectedProject.members.length ? (
-                      <div className="mt-8">
-                        <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-[#6a7d88]">
-                          <Users className="size-4" />
-                          Members
-                        </h3>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {selectedProject.members.map((member) => (
-                            <span
-                              key={member}
-                              className="rounded-full border border-[#dbe7ef] bg-white px-3 py-1.5 text-sm text-[#435866]"
-                            >
-                              {member}
-                            </span>
-                          ))}
+                      <>
+                        <details className="mt-6 rounded-[24px] border border-[#dae6eb] bg-white/78 p-4 shadow-[0_14px_36px_rgba(47,74,91,0.05)] sm:hidden">
+                          <summary className="cursor-pointer text-sm font-semibold text-[#415766]">멤버 목록 보기</summary>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {selectedProject.members.map((member) => (
+                              <span
+                                key={member}
+                                className="rounded-full border border-[#dbe7ef] bg-white px-3 py-1.5 text-sm text-[#435866]"
+                              >
+                                {member}
+                              </span>
+                            ))}
+                          </div>
+                        </details>
+
+                        <div className="mt-8 hidden sm:block">
+                          <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-[#6a7d88]">
+                            <Users className="size-4" />
+                            Members
+                          </h3>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {selectedProject.members.map((member) => (
+                              <span
+                                key={member}
+                                className="rounded-full border border-[#dbe7ef] bg-white px-3 py-1.5 text-sm text-[#435866]"
+                              >
+                                {member}
+                              </span>
+                            ))}
+                          </div>
                         </div>
-                      </div>
+                      </>
                     ) : null}
 
                     {linkEntries.length ? (
-                      <div className="mt-8 flex flex-wrap gap-3">
+                      <div className="mt-6 flex flex-wrap gap-3 sm:mt-8">
                         {linkEntries.map(({ label, href, icon: Icon }) => (
                           <Button
                             key={label}
@@ -681,7 +742,7 @@ export function ProjectsShowcasePage() {
                       </div>
                     ) : null}
 
-                    <div className="mt-8 rounded-[28px] border border-[#dae6eb] bg-white/78 p-5 shadow-[0_16px_40px_rgba(47,74,91,0.06)]">
+                    <div className="mt-6 rounded-[24px] border border-[#dae6eb] bg-white/78 p-4 shadow-[0_16px_40px_rgba(47,74,91,0.06)] sm:mt-8 sm:rounded-[28px] sm:p-5">
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7b8f99]">
                         기록 메타데이터
                       </p>

@@ -256,11 +256,10 @@ export default function Home() {
 
           <div className="mt-6 flex w-full justify-center">
             <Button
-              size="lg"
               onClick={() => {
                 document.getElementById("about")?.scrollIntoView({ behavior: "smooth" })
               }}
-              className="w-full max-w-[15rem] rounded-full bg-[#7CB8E8] px-7 py-5 text-sm font-semibold text-white shadow-md transition-all hover:bg-[#6AA8D8] hover:shadow-lg sm:text-base"
+              className="h-11 w-full max-w-[11.5rem] rounded-full bg-[#7CB8E8] px-5 text-sm font-semibold text-white shadow-md transition-all hover:bg-[#6AA8D8] hover:shadow-lg sm:h-12 sm:max-w-[12.5rem] sm:px-6 sm:text-[0.95rem]"
             >
               시작하기
             </Button>
