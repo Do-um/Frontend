@@ -53,9 +53,9 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/social-preview.svg",
-        width: 1200,
-        height: 630,
+        url: "/hero-banner.svg",
+        width: 1280,
+        height: 366,
         alt: "Do,um website preview",
       },
     ],
@@ -64,7 +64,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Do,um",
     description: "국민대학교 소프트웨어 교육봉사 동아리 Do,um 공식 웹사이트",
-    images: ["/social-preview.svg"],
+    images: ["/hero-banner.svg"],
   },
   icons: {
     icon: '/favicon.png',

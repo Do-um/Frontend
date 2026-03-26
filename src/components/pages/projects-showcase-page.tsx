@@ -356,7 +356,7 @@ export function ProjectsShowcasePage() {
 
   return (
     <div
-      className="min-h-screen bg-cover bg-center bg-no-repeat bg-fixed text-[#1f2730]"
+      className="min-h-screen bg-cover bg-center bg-no-repeat bg-scroll text-[#1f2730] lg:bg-fixed"
       style={{ backgroundImage: "url('/home-bg.png')" }}
     >
       <div className="relative overflow-hidden">
@@ -368,34 +368,34 @@ export function ProjectsShowcasePage() {
         <div className="relative">
           <HeaderNav />
 
-          <main className="mx-auto max-w-6xl px-6 pb-20 pt-12 sm:pt-16">
+          <main className="mx-auto max-w-6xl px-4 pb-16 pt-8 sm:px-6 sm:pb-20 sm:pt-12 lg:pt-16">
             <section className="mx-auto max-w-3xl text-center">
-              <div className="animate-float mx-auto flex h-28 w-28 items-center justify-center rounded-full bg-white/72 shadow-[0_18px_50px_rgba(65,106,133,0.12)] backdrop-blur-sm">
+              <div className="animate-float mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-white/72 shadow-[0_18px_50px_rgba(65,106,133,0.12)] backdrop-blur-sm sm:h-28 sm:w-28">
                 <Image src="/doum-logo-large.png" alt="DO,UM 로고" width={62} height={88} priority />
               </div>
-              <p className="mt-8 inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/80 px-4 py-2 text-xs font-semibold tracking-[0.22em] text-[#6a7d88] uppercase">
+              <p className="mt-6 inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/80 px-4 py-2 text-[11px] font-semibold tracking-[0.18em] text-[#6a7d88] uppercase sm:mt-8 sm:text-xs sm:tracking-[0.22em]">
                 <Sparkles className="size-3.5" />
                 Project Archive
               </p>
-              <h1 className="mt-6 text-4xl font-black tracking-tight text-black sm:text-5xl">Our Projects</h1>
-              <p className="mt-4 text-base leading-7 text-[#677680] sm:text-lg">
+              <h1 className="mt-5 text-3xl font-black tracking-tight text-black sm:mt-6 sm:text-5xl">Our Projects</h1>
+              <p className="mt-3 text-sm leading-6 text-[#677680] sm:mt-4 sm:text-lg">
                 What can't we do?
               </p>
             </section>
 
-            <section className="mt-12 rounded-[36px] border border-white/75 bg-white/68 p-5 shadow-[0_24px_60px_rgba(48,72,88,0.08)] backdrop-blur-md sm:p-8">
+            <section className="mt-10 rounded-[28px] border border-white/75 bg-white/68 p-4 shadow-[0_24px_60px_rgba(48,72,88,0.08)] backdrop-blur-md sm:mt-12 sm:rounded-[36px] sm:p-8">
               <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <p className="text-sm font-semibold text-[#6f8590]">PROJECT ARCHIVE</p>
                   <h2 className="mt-2 text-2xl font-bold text-[#1d2a34]">프로젝트 기록</h2>
                 </div>
                 {isAdmin ? (
-                  <div className="flex flex-wrap gap-3">
+                  <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap">
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => setEditorState({ mode: "create", project: null })}
-                      className="self-end rounded-full border-[#d7e5ee] bg-white/80 px-4 text-[#355264] hover:bg-white"
+                      className="w-full self-end rounded-full border-[#d7e5ee] bg-white/80 px-4 text-[#355264] hover:bg-white sm:w-auto"
                     >
                       <Plus className="size-4" />
                       추가하기
@@ -405,11 +405,11 @@ export function ProjectsShowcasePage() {
               </div>
 
               {availableYears.length ? (
-                <div className="mb-8 flex flex-wrap items-center gap-2">
+                <div className="-mx-1 mb-8 flex flex-nowrap items-center gap-2 overflow-x-auto px-1 pb-2 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
                   <button
                     type="button"
                     onClick={() => setSelectedYear("all")}
-                    className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                    className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition ${
                       selectedYear === "all"
                         ? "bg-[#1f2730] text-white shadow-sm"
                         : "border border-[#d7e5ee] bg-white/80 text-[#355264] hover:bg-white"
@@ -422,7 +422,7 @@ export function ProjectsShowcasePage() {
                       key={`project-year-${year}`}
                       type="button"
                       onClick={() => setSelectedYear(year)}
-                      className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                      className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition ${
                         selectedYear === year
                           ? "bg-[#7cb8e8] text-white shadow-sm"
                           : "border border-[#d7e5ee] bg-white/80 text-[#355264] hover:bg-white"
@@ -496,12 +496,12 @@ export function ProjectsShowcasePage() {
             }}
           >
             <DialogContent
-              className="max-h-[min(92vh,960px)] w-[calc(100vw-1rem)] !max-w-[calc(100vw-1rem)] overflow-hidden rounded-[32px] border-0 bg-[#f5f7f2] p-0 shadow-[0_40px_120px_rgba(24,39,54,0.32)] sm:w-[min(1120px,calc(100vw-2rem))] sm:!max-w-[1120px] xl:!max-w-[1180px]"
+              className="h-[100svh] w-screen !max-w-none overflow-hidden rounded-none border-0 bg-[#f5f7f2] p-0 shadow-[0_40px_120px_rgba(24,39,54,0.32)] sm:max-h-[min(92vh,960px)] sm:h-auto sm:w-[min(1120px,calc(100vw-2rem))] sm:!max-w-[1120px] sm:rounded-[32px] xl:!max-w-[1180px]"
               showCloseButton
             >
               {selectedProject ? (
-                <div className="grid max-h-[min(92vh,960px)] grid-cols-1 overflow-hidden xl:grid-cols-[minmax(0,1.08fr)_390px]">
-                  <div className="border-b border-white/70 bg-[linear-gradient(180deg,#d9ebf5_0%,#eff4ea_100%)] p-5 xl:border-b-0 xl:border-r xl:p-7">
+                <div className="grid h-full grid-cols-1 overflow-hidden sm:max-h-[min(92vh,960px)] xl:grid-cols-[minmax(0,1.08fr)_390px]">
+                  <div className="border-b border-white/70 bg-[linear-gradient(180deg,#d9ebf5_0%,#eff4ea_100%)] p-4 sm:p-5 xl:border-b-0 xl:border-r xl:p-7">
                     <DialogTitle className="sr-only">{selectedProject.title}</DialogTitle>
                     <DialogDescription className="sr-only">
                       프로젝트 이미지와 설명, 링크, 멤버, 기간 정보를 보여주는 상세 모달
@@ -513,10 +513,10 @@ export function ProjectsShowcasePage() {
                           <img
                             src={resolveMediaUrl(activeImage) || ""}
                             alt={`${selectedProject.title} 대표 이미지`}
-                            className="h-[280px] w-full object-cover sm:h-[360px] xl:h-[520px]"
+                            className="h-[220px] w-full object-cover sm:h-[360px] xl:h-[520px]"
                           />
                         ) : (
-                          <div className="flex h-[280px] items-center justify-center sm:h-[360px] xl:h-[520px]">
+                          <div className="flex h-[220px] items-center justify-center sm:h-[360px] xl:h-[520px]">
                             <FolderOpen className="size-14 text-[#6f8590]" />
                           </div>
                         )}
@@ -551,7 +551,7 @@ export function ProjectsShowcasePage() {
                     </div>
                   </div>
 
-                  <div className="overflow-y-auto p-6 sm:p-8">
+                  <div className="overflow-y-auto p-5 sm:p-8">
                     <div className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#617783]">
                       <Sparkles className="size-3.5" />
                       Project Detail
@@ -581,12 +581,12 @@ export function ProjectsShowcasePage() {
                       ))}
                     </div>
 
-                    <div className="mt-5 flex flex-wrap items-start justify-between gap-4">
-                      <h2 className="text-3xl font-black tracking-tight text-[#15212b]">
+                    <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+                      <h2 className="text-2xl font-black tracking-tight text-[#15212b] sm:text-3xl">
                         {selectedProject.title}
                       </h2>
                       {isAdmin ? (
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
                           <Button
                             size="sm"
                             variant="outline"
@@ -594,7 +594,7 @@ export function ProjectsShowcasePage() {
                               setSelectedProject(null)
                               setEditorState({ mode: "edit", project: selectedProject })
                             }}
-                            className="rounded-full border-[#d7e5ee] bg-white px-4 text-[#355264] hover:bg-[#f5fbfe]"
+                            className="w-full rounded-full border-[#d7e5ee] bg-white px-4 text-[#355264] hover:bg-[#f5fbfe] sm:w-auto"
                           >
                             <PencilLine className="size-4" />
                             수정
@@ -604,7 +604,7 @@ export function ProjectsShowcasePage() {
                             variant="outline"
                             onClick={() => void handleProjectDelete(selectedProject)}
                             disabled={deletingProjectId === selectedProject.projectId}
-                            className="rounded-full border-[#efc9c9] bg-white px-4 text-[#a44a4a] hover:bg-[#fff5f5]"
+                            className="w-full rounded-full border-[#efc9c9] bg-white px-4 text-[#a44a4a] hover:bg-[#fff5f5] sm:w-auto"
                           >
                             <Trash2 className="size-4" />
                             {deletingProjectId === selectedProject.projectId ? "삭제 중..." : "삭제"}
@@ -669,7 +669,7 @@ export function ProjectsShowcasePage() {
                             key={label}
                             asChild
                             variant="outline"
-                            className="rounded-full border-[#d7e5ee] bg-white px-5 text-[#365265] hover:bg-[#f5fbfe]"
+                            className="w-full rounded-full border-[#d7e5ee] bg-white px-5 text-[#365265] hover:bg-[#f5fbfe] sm:w-auto"
                           >
                             <a href={href} target="_blank" rel="noreferrer">
                               <Icon className="size-4" />

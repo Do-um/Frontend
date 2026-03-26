@@ -236,13 +236,13 @@ export default function Home() {
 
   return (
     <div
-      className="min-h-screen bg-cover bg-center bg-no-repeat bg-fixed"
+      className="min-h-screen bg-cover bg-center bg-no-repeat bg-scroll lg:bg-fixed"
       style={{ backgroundImage: "url('/home-bg.png')" }}
     >
       <section className="min-h-screen">
         <HeaderNav />
 
-        <div className="relative flex min-h-[calc(100vh-80px)] flex-col items-center justify-center px-8 pb-10 pt-6">
+        <div className="relative flex min-h-[calc(100svh-76px)] flex-col items-center justify-center px-4 pb-10 pt-4 sm:px-8 sm:pt-6">
           <div className="flex w-full justify-center">
             <Image
               src={resolveMediaUrl(clubContent.heroBannerImageUrl) || "/hero-banner.svg"}
@@ -254,13 +254,13 @@ export default function Home() {
             />
           </div>
 
-          <div className="mt-6 flex justify-center">
+          <div className="mt-6 flex w-full justify-center">
             <Button
               size="lg"
               onClick={() => {
                 document.getElementById("about")?.scrollIntoView({ behavior: "smooth" })
               }}
-              className="rounded-full bg-[#7CB8E8] px-8 py-6 text-base font-semibold text-white shadow-md transition-all hover:bg-[#6AA8D8] hover:shadow-lg"
+              className="w-full max-w-[15rem] rounded-full bg-[#7CB8E8] px-7 py-5 text-sm font-semibold text-white shadow-md transition-all hover:bg-[#6AA8D8] hover:shadow-lg sm:text-base"
             >
               시작하기
             </Button>
@@ -268,10 +268,10 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="about" className="px-4 py-16 lg:px-8 lg:py-24">
+      <section id="about" className="px-4 py-12 sm:py-16 lg:px-8 lg:py-24">
         <div className="mx-auto max-w-6xl">
-          <div className="rounded-[28px] border border-gray-300 bg-white/90 p-6 shadow-xl backdrop-blur-sm lg:p-10">
-            <div className="mb-10 flex items-start justify-between gap-4">
+          <div className="rounded-[28px] border border-gray-300 bg-white/90 p-5 shadow-xl backdrop-blur-sm sm:p-6 lg:p-10">
+            <div className="mb-8 flex flex-col gap-5 lg:mb-10 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <h2 className="mb-3 text-2xl font-bold text-gray-900">{clubContent.introTitle}</h2>
                 <p className="mb-1 text-sm text-gray-600">{clubContent.introLead}</p>
@@ -286,7 +286,7 @@ export default function Home() {
                     variant="outline"
                     size="sm"
                     onClick={() => setContentEditorOpen(true)}
-                    className="rounded-full border-[#d7e5ee] bg-white/80 px-4 text-[#355264] hover:bg-white"
+                    className="w-full rounded-full border-[#d7e5ee] bg-white/80 px-4 text-[#355264] hover:bg-white sm:w-auto"
                   >
                     <PencilLine className="size-4" />
                     내용/이미지 수정
@@ -296,7 +296,7 @@ export default function Home() {
                     size="sm"
                     onClick={() => void handleClubContentDelete()}
                     disabled={deletingClubContent}
-                    className="rounded-full border-[#efc9c9] bg-white/80 px-4 text-[#a44a4a] hover:bg-[#fff5f5]"
+                    className="w-full rounded-full border-[#efc9c9] bg-white/80 px-4 text-[#a44a4a] hover:bg-[#fff5f5] sm:w-auto"
                   >
                     <Trash2 className="size-4" />
                     {deletingClubContent ? "삭제 중..." : "내용 삭제"}
@@ -312,14 +312,14 @@ export default function Home() {
             ) : null}
 
             <div id="activities" className="mb-12">
-              <div className="mb-6 flex items-center justify-between gap-4">
+              <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <h3 className="text-lg font-bold text-gray-900">{clubContent.activitySectionTitle}</h3>
                 {isAdmin ? (
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setProgramEditorState({ mode: "create", program: null })}
-                    className="rounded-full border-[#d7e5ee] bg-white/80 px-4 text-[#355264] hover:bg-white"
+                    className="w-full rounded-full border-[#d7e5ee] bg-white/80 px-4 text-[#355264] hover:bg-white sm:w-auto"
                   >
                     <Plus className="size-4" />
                     추가하기
@@ -338,7 +338,7 @@ export default function Home() {
                   {programs.map((program) => (
                     <div
                       key={program.id}
-                      className="h-[13.5rem] rounded-[24px] border border-[#cfe2f2] bg-[linear-gradient(180deg,#edf5fc_0%,#e6f0f8_100%)] p-5 shadow-[0_10px_26px_rgba(87,122,153,0.12)]"
+                      className="min-h-[13.5rem] rounded-[24px] border border-[#cfe2f2] bg-[linear-gradient(180deg,#edf5fc_0%,#e6f0f8_100%)] p-5 shadow-[0_10px_26px_rgba(87,122,153,0.12)] sm:h-[13.5rem]"
                     >
                       <div className="flex h-full items-start justify-between gap-3">
                         <div className="flex h-full min-w-0 flex-1 flex-col">
@@ -416,7 +416,7 @@ export default function Home() {
                 </div>
               ) : null}
 
-              <div className="space-y-10">
+              <div className="space-y-8 sm:space-y-10">
                 {!displayedActivities.length ? (
                   <div className="rounded-2xl border border-[#d7e5ee] bg-[#f8fbfd] px-5 py-4 text-sm text-[#60717d]">
                     선택한 연도에 등록된 주요활동이 없습니다.
@@ -426,11 +426,11 @@ export default function Home() {
                 {displayedActivities.map((activity, index) => (
                   <div
                     key={activity.id}
-                    className={`flex flex-col items-start gap-4 ${
+                    className={`flex flex-col items-start gap-5 sm:gap-6 ${
                       index % 2 === 0 ? "lg:flex-row" : "lg:flex-row-reverse"
                     }`}
                   >
-                    <div className="relative aspect-[4/3] w-full max-w-[220px] overflow-hidden rounded-[20px] bg-[#dbe6ea]">
+                    <div className="relative aspect-[4/3] w-full max-w-full overflow-hidden rounded-[20px] bg-[#dbe6ea] sm:max-w-[220px]">
                       {activity.activityImages[0] ? (
                         <Image
                           src={resolveMediaUrl(activity.activityImages[0]) || "/placeholder.svg"}
@@ -441,8 +441,8 @@ export default function Home() {
                       ) : null}
                     </div>
 
-                    <div className="flex min-h-[160px] flex-col justify-center">
-                      <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-h-[160px] w-full flex-1 flex-col justify-center">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div className="space-y-2">
                           <div className="flex flex-wrap items-center gap-2">
                             {getActivityYears(activity).map((year) => (
@@ -457,7 +457,7 @@ export default function Home() {
                           <p className="text-sm font-semibold text-gray-900">{activity.activityId}</p>
                         </div>
                         {isAdmin ? (
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 sm:self-start">
                             <Button
                               variant="ghost"
                               size="icon-sm"
@@ -485,14 +485,14 @@ export default function Home() {
       </section>
 
       <section className="px-4 py-12 lg:px-8">
-        <div className="mx-auto max-w-6xl px-6 py-10">
-          <div className="mb-4 ml-2">
+        <div className="mx-auto max-w-6xl px-5 py-8 sm:px-6 sm:py-10">
+          <div className="mb-4">
             <p className="text-sm text-gray-600">{clubContent.studyCaption}</p>
             <p className="text-lg font-bold text-gray-900">{clubContent.studyTitle}</p>
           </div>
 
           <div className="flex flex-col items-start justify-between gap-10 lg:flex-row">
-            <div className="ml-2 space-y-5">
+            <div className="space-y-5">
               <div>
                 <p className="text-lg font-bold text-gray-900">{clubContent.learnTitle}</p>
                 <MarkdownContent content={clubContent.learnDescription} className="text-base text-gray-600" />
@@ -507,7 +507,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="h-[18rem] w-full max-w-[28rem] lg:-mt-10">
+            <div className="h-[14rem] w-full max-w-[28rem] lg:-mt-10 lg:h-[18rem]">
               <Image
                 src={resolveMediaUrl(clubContent.studyImageUrl) || "/skill.png"}
                 alt="기술 스택 아이콘"

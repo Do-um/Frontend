@@ -147,14 +147,14 @@ export default function RecruitPage() {
 
   return (
     <div
-      className="min-h-screen bg-cover bg-center bg-no-repeat bg-fixed"
+      className="min-h-screen bg-cover bg-center bg-no-repeat bg-scroll lg:bg-fixed"
       style={{ backgroundImage: "url('/recruit-bg.png')" }}
     >
       <HeaderNav />
 
-      <section className="relative overflow-hidden py-16">
+      <section className="relative overflow-hidden py-10 sm:py-16">
         <div className="mx-auto max-w-4xl px-4">
-          <div className="flex items-center justify-center" style={{ minHeight: "350px" }}>
+          <div className="flex items-center justify-center" style={{ minHeight: "260px" }}>
             <div className="animate-float">
               <div
                 className="transition-transform duration-100 ease-out"
@@ -166,7 +166,7 @@ export default function RecruitPage() {
                   width={500}
                   height={350}
                   priority
-                  className="select-none"
+                  className="h-auto w-[min(72vw,280px)] select-none sm:w-[360px] md:w-[440px] lg:w-[500px]"
                 />
               </div>
             </div>
@@ -174,18 +174,18 @@ export default function RecruitPage() {
         </div>
       </section>
 
-      <section className="py-12">
+      <section className="py-8 sm:py-12">
         <div className="mx-auto max-w-3xl px-4">
           <div className="mb-8 text-center">
-            <div className="flex items-center justify-center gap-3">
-              <h1 className="text-2xl font-bold text-gray-900">{recruitContent.overviewTitle}</h1>
+            <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <h1 className="text-center text-2xl font-bold text-gray-900">{recruitContent.overviewTitle}</h1>
               {isAdmin ? (
                 <div className="flex flex-wrap items-center justify-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setEditorOpen(true)}
-                    className="rounded-full border-[#d7e5ee] bg-white/80 px-4 text-[#355264] hover:bg-white"
+                    className="w-full rounded-full border-[#d7e5ee] bg-white/80 px-4 text-[#355264] hover:bg-white sm:w-auto"
                   >
                     <PencilLine className="size-4" />
                     내용 수정
@@ -195,7 +195,7 @@ export default function RecruitPage() {
                     size="sm"
                     onClick={() => void handleRecruitContentDelete()}
                     disabled={deletingContent}
-                    className="rounded-full border-[#efc9c9] bg-white/80 px-4 text-[#a44a4a] hover:bg-[#fff5f5]"
+                    className="w-full rounded-full border-[#efc9c9] bg-white/80 px-4 text-[#a44a4a] hover:bg-[#fff5f5] sm:w-auto"
                   >
                     <Trash2 className="size-4" />
                     {deletingContent ? "삭제 중..." : "내용 삭제"}
@@ -220,7 +220,7 @@ export default function RecruitPage() {
             {loading ? <p className="mt-4 text-sm text-gray-500">모집 정보를 불러오는 중입니다...</p> : null}
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="rounded-xl border border-gray-200 bg-white p-6">
               <h3 className="mb-3 text-sm font-bold text-gray-900">{recruitContent.applicationPeriodTitle}</h3>
               <p className="text-sm text-gray-700">
@@ -240,14 +240,14 @@ export default function RecruitPage() {
         </div>
       </section>
 
-      <section className="py-12">
+      <section className="py-8 sm:py-12">
         <div className="mx-auto max-w-3xl px-4">
           <div className="mb-6 text-center">
             <h2 className="mb-2 text-2xl font-bold text-gray-900">{recruitContent.targetSectionTitle}</h2>
             <MarkdownContent content={recruitContent.targetSectionDescription} className="text-sm text-gray-600" />
           </div>
 
-          <div className="rounded-xl border border-gray-200 bg-white p-8">
+          <div className="rounded-xl border border-gray-200 bg-white p-5 sm:p-8">
             <div className="space-y-3 text-sm">
               {recruitContent.targetItems.map((item) => (
                 <div key={item} className="flex items-start gap-2">
@@ -260,14 +260,14 @@ export default function RecruitPage() {
         </div>
       </section>
 
-      <section className="py-12">
+      <section className="py-8 sm:py-12">
         <div className="mx-auto max-w-3xl px-4 text-center">
           <h2 className="mb-6 text-xl font-bold text-gray-900">{recruitContent.ctaTitle}</h2>
           <Button
             size="lg"
             onClick={handleApplyClick}
             disabled={!applyUrl}
-            className="rounded-full bg-[#7CB8E8] px-8 py-5 text-sm font-medium text-white shadow-md transition-all hover:bg-[#6AA8D8] hover:shadow-lg disabled:bg-[#b9d7ee] disabled:text-white"
+            className="w-full rounded-full bg-[#7CB8E8] px-8 py-5 text-sm font-medium text-white shadow-md transition-all hover:bg-[#6AA8D8] hover:shadow-lg disabled:bg-[#b9d7ee] disabled:text-white sm:w-auto"
           >
             {recruitContent.ctaButtonLabel}
           </Button>

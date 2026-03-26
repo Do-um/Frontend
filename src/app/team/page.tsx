@@ -186,20 +186,20 @@ export default function TeamPage() {
 
   return (
     <div
-      className="min-h-screen bg-cover bg-center bg-no-repeat bg-fixed"
+      className="min-h-screen bg-cover bg-center bg-no-repeat bg-scroll lg:bg-fixed"
       style={{ backgroundImage: "url('/team-bg.png')" }}
     >
       <HeaderNav />
 
-      <main className="mx-auto max-w-[1280px] px-6 pb-24 pt-10">
-        <div className="mb-[72px] flex flex-col items-center text-center">
-          <div className="animate-float mb-10">
+      <main className="mx-auto max-w-[1280px] px-4 pb-20 pt-8 sm:px-6 sm:pb-24 sm:pt-10">
+        <div className="mb-14 flex flex-col items-center text-center sm:mb-[72px]">
+          <div className="animate-float mb-8 sm:mb-10">
             <Image src="/logo.png" alt="Do,um 로고" width={150} height={150} />
           </div>
-          <h1 className="mb-4 text-[3.4rem] font-black tracking-[-0.04em] text-black sm:text-[4.2rem]">
+          <h1 className="mb-4 text-[2.35rem] font-black tracking-[-0.04em] text-black sm:text-[4.2rem]">
             GROW TO GIVE
           </h1>
-          <p className="text-[1.4rem] text-[#6f6f6f] sm:text-[1.9rem]">
+          <p className="text-[1rem] text-[#6f6f6f] sm:text-[1.9rem]">
             Do,um 운영진 소개
           </p>
           {isAdmin ? (
@@ -207,7 +207,7 @@ export default function TeamPage() {
               variant="outline"
               size="sm"
               onClick={() => setEditorState({ mode: "create", staff: null })}
-              className="mt-8 rounded-full border-[#bccfd9] bg-white/80 px-4 text-[#355264] hover:bg-white"
+              className="mt-8 w-full rounded-full border-[#bccfd9] bg-white/80 px-4 text-[#355264] hover:bg-white sm:w-auto"
             >
               <Plus className="size-4" />
               추가하기
@@ -337,9 +337,9 @@ function MemberCard({
 
   return (
     <div className="overflow-hidden rounded-[28px] border border-black/45 bg-[#f7f5ef]/90 shadow-[0_16px_36px_rgba(18,30,44,0.08)] backdrop-blur-sm">
-      <div className="flex min-h-[128px] items-start justify-between gap-4 px-5 py-5 sm:px-6">
-        <div className="flex min-w-0 items-center gap-4">
-          <div className="relative h-[58px] w-[58px] shrink-0 overflow-hidden rounded-full border border-black/45 bg-[#d9d9d9]">
+      <div className="flex min-h-[120px] items-start justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5">
+        <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
+          <div className="relative h-[52px] w-[52px] shrink-0 overflow-hidden rounded-full border border-black/45 bg-[#d9d9d9] sm:h-[58px] sm:w-[58px]">
             {member.profileImage ? (
               <Image
                 src={resolveMediaUrl(member.profileImage) || "/placeholder-user.jpg"}
@@ -351,7 +351,9 @@ function MemberCard({
           </div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <p className="truncate text-[1.8rem] font-black tracking-[-0.04em] text-black">{member.name}</p>
+              <p className="truncate text-[1.3rem] font-black leading-tight tracking-[-0.04em] text-black sm:text-[1.8rem]">
+                {member.name}
+              </p>
               <span className="inline-flex items-center gap-2 text-sm font-semibold tracking-[0.08em] text-[#6f8590]">
                 <span className="h-px w-4 bg-[#b8c9d3]" />
                 {member.role}
@@ -365,7 +367,7 @@ function MemberCard({
           </div>
         </div>
         {isAdmin ? (
-          <div className="flex items-center gap-2">
+          <div className="flex w-[72px] shrink-0 items-center justify-end gap-2">
             <Button
               variant="ghost"
               size="icon-sm"

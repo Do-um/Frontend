@@ -257,7 +257,7 @@ export default function AdminUsersPage() {
     >
       <HeaderNav />
 
-      <main className="mx-auto max-w-6xl px-6 pb-24 pt-14">
+      <main className="mx-auto max-w-6xl px-4 pb-20 pt-8 sm:px-6 sm:pb-24 sm:pt-14">
         <section className="rounded-[32px] border border-black/10 bg-white/80 px-6 py-8 shadow-[0_20px_50px_rgba(24,35,45,0.08)] backdrop-blur-sm sm:px-8">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-3">
@@ -280,7 +280,7 @@ export default function AdminUsersPage() {
           </div>
         </section>
 
-        <section className="mt-8 grid gap-4 md:grid-cols-4">
+        <section className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-4">
           <SummaryCard icon={<Users className="size-4" />} label="전체 회원" value={summary.total} accent="text-[#29465a]" />
           <SummaryCard label="어드민" value={summary.ADMIN} accent="text-[#0f5c5c]" />
           <SummaryCard label="두음부원" value={summary.DOUM_MEMBER} accent="text-[#355264]" />
@@ -456,7 +456,7 @@ export default function AdminUsersPage() {
 
               <Dialog open={selectedUser !== null} onOpenChange={(open) => (!open ? setSelectedUserId(null) : undefined)}>
                 {selectedUser ? (
-                  <DialogContent className="max-w-2xl rounded-[32px] border border-[#dbe6e1] bg-[#fbfcfb] p-0 shadow-[0_20px_60px_rgba(24,35,45,0.12)]">
+                  <DialogContent className="w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] rounded-[28px] border border-[#dbe6e1] bg-[#fbfcfb] p-0 shadow-[0_20px_60px_rgba(24,35,45,0.12)] sm:max-w-2xl sm:rounded-[32px]">
                     <UserDetailDialogContent
                       currentViewerId={user?.id ?? null}
                       deletingUserId={deletingUserId}
@@ -572,13 +572,13 @@ function UserDetailDialogContent({
         ) : null}
       </div>
 
-      <DialogFooter className="mt-6">
+      <DialogFooter className="mt-6 flex-col gap-3 sm:flex-row">
         <Button
           type="button"
           variant="outline"
           onClick={() => void onDelete(member)}
           disabled={isSelf || isSaving || isDeleting}
-          className="h-11 rounded-2xl border-[#efc9c9] bg-white px-4 text-[#a44a4a] hover:bg-[#fff5f5]"
+          className="h-11 w-full rounded-2xl border-[#efc9c9] bg-white px-4 text-[#a44a4a] hover:bg-[#fff5f5] sm:w-auto"
         >
           <Trash2 className="size-4" />
           {isDeleting ? "삭제 중..." : "회원 삭제"}
@@ -587,7 +587,7 @@ function UserDetailDialogContent({
           type="button"
           onClick={() => void onRoleSave(member)}
           disabled={isSelf || !isDirty || isSaving || isDeleting}
-          className="h-11 rounded-2xl bg-[#243440] px-5 text-white hover:bg-[#1b2b36]"
+          className="h-11 w-full rounded-2xl bg-[#243440] px-5 text-white hover:bg-[#1b2b36] sm:w-auto"
         >
           {isSaving ? "저장 중..." : "권한 저장"}
         </Button>

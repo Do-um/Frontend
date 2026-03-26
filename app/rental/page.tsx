@@ -597,17 +597,17 @@ export default function RentalPage() {
 
   return (
     <div
-      className="min-h-screen bg-cover bg-center bg-no-repeat bg-fixed"
+      className="min-h-screen bg-cover bg-center bg-no-repeat bg-scroll lg:bg-fixed"
       style={{ backgroundImage: "url('/recruit-bg.png')" }}
     >
       <HeaderNav />
 
-      <main className="mx-auto max-w-6xl px-6 pb-20 pt-12 sm:pt-16">
+      <main className="mx-auto max-w-6xl px-4 pb-16 pt-8 sm:px-6 sm:pb-20 sm:pt-12 lg:pt-16">
         <section className="mb-14 flex flex-col items-center text-center">
-          <div className="animate-float relative flex h-28 w-28 items-center justify-center rounded-full bg-white/70 shadow-[0_18px_50px_rgba(65,106,133,0.12)] backdrop-blur-sm">
+          <div className="animate-float relative flex h-24 w-24 items-center justify-center rounded-full bg-white/70 shadow-[0_18px_50px_rgba(65,106,133,0.12)] backdrop-blur-sm sm:h-28 sm:w-28">
             <Image src="/doum-logo-large.png" alt="DO,UM 로고" width={62} height={88} priority />
           </div>
-          <p className="mt-8 inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#6a7d88]">
+          <p className="mt-6 inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/80 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6a7d88] sm:mt-8 sm:text-xs sm:tracking-[0.22em]">
             <Sparkles className="size-3.5" />
             Rental
           </p>
@@ -666,7 +666,7 @@ export default function RentalPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => setEditorState({ mode: "create", item: null })}
-                  className="rounded-full border-[#d7e5ee] bg-white/90 px-4 text-[#355264] hover:bg-white"
+                  className="w-full rounded-full border-[#d7e5ee] bg-white/90 px-4 text-[#355264] hover:bg-white sm:w-auto"
                 >
                   <Plus className="size-4" />
                   물품 추가
@@ -793,7 +793,7 @@ export default function RentalPage() {
         {selectedItem ? (
           <section
             ref={detailSectionRef}
-            className="mt-12 overflow-hidden rounded-[32px] bg-[#f9f6f1] shadow-[0_22px_70px_rgba(29,49,63,0.12)]"
+            className="mt-10 overflow-hidden rounded-[28px] bg-[#f9f6f1] shadow-[0_22px_70px_rgba(29,49,63,0.12)] sm:mt-12 sm:rounded-[32px]"
           >
             <div className="grid grid-cols-1">
               <div className="bg-[#f3f6f8] p-5 sm:p-6">
