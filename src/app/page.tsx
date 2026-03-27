@@ -7,7 +7,6 @@ import { PencilLine, Plus, Trash2 } from "lucide-react"
 
 import { MarkdownContent } from "@/components/common/markdown-content"
 import { HeaderNav } from "@/components/header-nav"
-import { HomeIntro } from "@/components/home-intro"
 import { SiteFooter } from "@/components/site-footer"
 import { Button } from "@/components/ui/button"
 import { useAdminSession } from "@/hooks/use-admin-session"
@@ -240,8 +239,6 @@ export default function Home() {
       className="min-h-screen bg-cover bg-center bg-no-repeat bg-scroll lg:bg-fixed"
       style={{ backgroundImage: "url('/home-bg.png')" }}
     >
-      <HomeIntro />
-
       <section className="min-h-screen">
         <HeaderNav />
 
