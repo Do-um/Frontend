@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { ExternalLink, LoaderCircle, RefreshCw, Sparkles } from "lucide-react"
+import { AlertTriangle, ExternalLink, LoaderCircle, RefreshCw, Sparkles } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -34,6 +34,12 @@ type RouletteGoalMessage = {
   winnerType: string
 }
 
+type RouletteErrorMessage = {
+  type: "lazygyu-roulette-error"
+  source: "lazygyu-roulette"
+  message: string
+}
+
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null
 }
@@ -57,6 +63,15 @@ function isRouletteGoalMessage(value: unknown): value is RouletteGoalMessage {
   )
 }
 
+function isRouletteErrorMessage(value: unknown): value is RouletteErrorMessage {
+  return (
+    isObject(value) &&
+    value.type === "lazygyu-roulette-error" &&
+    value.source === "lazygyu-roulette" &&
+    typeof value.message === "string"
+  )
+}
+
 export function RouletteGame({
   onBackHome,
   onAutoRecord,
@@ -65,12 +80,15 @@ export function RouletteGame({
   onAutoRecord: (payload: AutoRecordPayload) => Promise<void>
 }) {
   const [frameKey, setFrameKey] = useState(0)
-  const [frameStatus, setFrameStatus] = useState<"loading" | "ready">("loading")
+  const [frameStatus, setFrameStatus] = useState<"loading" | "ready" | "error">("loading")
+  const [frameError, setFrameError] = useState("")
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle")
   const [saveError, setSaveError] = useState("")
   const [latestResult, setLatestResult] = useState<RouletteGoalMessage | null>(null)
+  const frameRef = useRef<HTMLIFrameElement | null>(null)
   const lastPayloadRef = useRef<AutoRecordPayload | null>(null)
   const handledEventIdsRef = useRef<Set<string>>(new Set())
+  const frameCheckTimerRef = useRef<number | null>(null)
 
   useEffect(() => {
     function handleMessage(event: MessageEvent<unknown>) {
@@ -79,7 +97,24 @@ export function RouletteGame({
       }
 
       if (isRouletteReadyMessage(event.data)) {
+        if (frameCheckTimerRef.current !== null) {
+          window.clearTimeout(frameCheckTimerRef.current)
+          frameCheckTimerRef.current = null
+        }
+
+        setFrameError("")
         setFrameStatus("ready")
+        return
+      }
+
+      if (isRouletteErrorMessage(event.data)) {
+        if (frameCheckTimerRef.current !== null) {
+          window.clearTimeout(frameCheckTimerRef.current)
+          frameCheckTimerRef.current = null
+        }
+
+        setFrameError(event.data.message)
+        setFrameStatus("error")
         return
       }
 
@@ -112,6 +147,10 @@ export function RouletteGame({
 
     window.addEventListener("message", handleMessage)
     return () => {
+      if (frameCheckTimerRef.current !== null) {
+        window.clearTimeout(frameCheckTimerRef.current)
+      }
+
       window.removeEventListener("message", handleMessage)
     }
   }, [onAutoRecord])
@@ -136,6 +175,25 @@ export function RouletteGame({
   function handleReloadFrame() {
     setFrameKey((current) => current + 1)
     setFrameStatus("loading")
+    setFrameError("")
+  }
+
+  function handleFrameLoad() {
+    if (frameCheckTimerRef.current !== null) {
+      window.clearTimeout(frameCheckTimerRef.current)
+    }
+
+    setFrameStatus("ready")
+    setFrameError("")
+
+    frameCheckTimerRef.current = window.setTimeout(() => {
+      const hasCanvas = Boolean(frameRef.current?.contentDocument?.querySelector("canvas"))
+
+      if (!hasCanvas) {
+        setFrameError("룰렛 엔진 캔버스가 초기화되지 않았습니다. 브라우저 기능이나 벤더 앱 런타임 오류를 확인해야 합니다.")
+        setFrameStatus("error")
+      }
+    }, 4000)
   }
 
   return (
@@ -179,19 +237,30 @@ export function RouletteGame({
           </div>
 
           <div className="relative bg-[#0b1218]">
-            {frameStatus === "loading" ? (
+            {frameStatus === "loading" || frameStatus === "error" ? (
               <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-[linear-gradient(180deg,rgba(11,18,24,0.72),rgba(11,18,24,0.4))]">
                 <div className="rounded-[26px] border border-white/12 bg-black/30 px-5 py-4 text-center text-white backdrop-blur-sm">
-                  <LoaderCircle className="mx-auto size-6 animate-spin" />
-                  <p className="mt-3 text-sm font-semibold">룰렛 앱을 준비하는 중입니다.</p>
+                  {frameStatus === "error" ? (
+                    <AlertTriangle className="mx-auto size-6 text-[#ffb4b4]" />
+                  ) : (
+                    <LoaderCircle className="mx-auto size-6 animate-spin" />
+                  )}
+                  <p className="mt-3 text-sm font-semibold">
+                    {frameStatus === "error" ? "룰렛 앱 로딩에 실패했습니다." : "룰렛 앱을 준비하는 중입니다."}
+                  </p>
+                  {frameStatus === "error" ? (
+                    <p className="mt-2 max-w-[360px] text-sm leading-6 text-white/78">{frameError}</p>
+                  ) : null}
                 </div>
               </div>
             ) : null}
 
             <iframe
+              ref={frameRef}
               key={frameKey}
               src={EMBEDDED_ROULETTE_URL}
               title="lazygyu Marble Roulette"
+              onLoad={handleFrameLoad}
               className="block h-[980px] w-full border-0 bg-[#0b1218]"
             />
           </div>
@@ -223,6 +292,8 @@ export function RouletteGame({
                     ? "Save Failed"
                     : saveState === "saving"
                       ? "Saving"
+                      : frameStatus === "error"
+                        ? "Vendor Error"
                       : frameStatus === "ready"
                         ? "Ready"
                         : "Loading"}
@@ -234,6 +305,8 @@ export function RouletteGame({
                     ? saveError
                     : saveState === "saving"
                       ? "당첨 결과를 저장하는 중입니다."
+                      : frameStatus === "error"
+                        ? frameError
                       : frameStatus === "ready"
                         ? "이제 iframe 안에서 이름을 입력하고 룰렛을 시작하면 됩니다."
                         : "원본 룰렛 앱 초기화를 기다리는 중입니다."}
