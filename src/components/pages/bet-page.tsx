@@ -16,6 +16,12 @@ import {
 } from "@/components/ui/dialog"
 import { useAdminSession } from "@/hooks/use-admin-session"
 import {
+  clearPersistentCaughtHistory,
+  createPersistentCaughtHistoryRecord,
+  fetchPersistentCaughtHistory,
+  isPersistentBetHistoryAvailable,
+} from "@/lib/bet-history-store"
+import {
   buildLeaderboard,
   buildRecentHistoryMap,
   createCaughtRecord,
@@ -51,23 +57,82 @@ import type {
 } from "./bet/types"
 
 export function BetPage() {
-  const { isDoumMember, isLoggedIn, loading: sessionLoading } = useAdminSession()
+  const { isAdmin, isDoumMember, isLoggedIn, loading: sessionLoading } = useAdminSession()
   const [currentScreen, setCurrentScreen] = useState<BetScreen>("home")
   const [caughtHistory, setCaughtHistory] = useState<CaughtRecord[]>([])
   const [historyLoaded, setHistoryLoaded] = useState(false)
+  const [historyStorageMode, setHistoryStorageMode] = useState<"local" | "persistent">(
+    isPersistentBetHistoryAvailable() ? "persistent" : "local",
+  )
   const [recordDialog, setRecordDialog] = useState<RecordDialogState>(EMPTY_RECORD_DIALOG_STATE)
   const [resetDialogOpen, setResetDialogOpen] = useState(false)
   const [notice, setNotice] = useState<NoticeState | null>(null)
   const caughtHistoryRef = useRef<CaughtRecord[]>([])
 
   useEffect(() => {
-    setCaughtHistory(loadCaughtHistory())
-    setHistoryLoaded(true)
-  }, [])
-
-  useEffect(() => {
     caughtHistoryRef.current = caughtHistory
   }, [caughtHistory])
+
+  useEffect(() => {
+    if (sessionLoading) {
+      return
+    }
+
+    if (!isLoggedIn || !isDoumMember) {
+      setCaughtHistory([])
+      setHistoryLoaded(true)
+      return
+    }
+
+    let cancelled = false
+
+    async function loadHistory() {
+      setHistoryLoaded(false)
+
+      try {
+        if (isPersistentBetHistoryAvailable()) {
+          const remoteHistory = await fetchPersistentCaughtHistory()
+
+          if (cancelled) {
+            return
+          }
+
+          setCaughtHistory(remoteHistory)
+          setHistoryStorageMode("persistent")
+          setHistoryLoaded(true)
+          return
+        }
+
+        const localHistory = loadCaughtHistory()
+
+        if (cancelled) {
+          return
+        }
+
+        setCaughtHistory(localHistory)
+        setHistoryStorageMode("local")
+        setHistoryLoaded(true)
+      } catch (error) {
+        if (cancelled) {
+          return
+        }
+
+        setCaughtHistory([])
+        setHistoryStorageMode(isPersistentBetHistoryAvailable() ? "persistent" : "local")
+        setHistoryLoaded(true)
+        setNotice({
+          tone: "error",
+          message: error instanceof Error ? error.message : "명예의 전당 기록을 불러오지 못했습니다.",
+        })
+      }
+    }
+
+    void loadHistory()
+
+    return () => {
+      cancelled = true
+    }
+  }, [isDoumMember, isLoggedIn, sessionLoading])
 
   useEffect(() => {
     if (!notice) {
@@ -88,18 +153,26 @@ export function BetPage() {
   const latestHistory = useMemo(() => getRecentHistory(caughtHistory, 5), [caughtHistory])
   const recentHistoryMap = useMemo(() => buildRecentHistoryMap(caughtHistory, 5), [caughtHistory])
   const nameSuggestions = useMemo(() => leaderboard.map((entry) => entry.displayName), [leaderboard])
+  const storageDescription =
+    historyStorageMode === "persistent"
+      ? "기록은 Supabase에 영구 저장됩니다. 같은 권한 계정이면 다른 기기에서도 같은 명예의 전당을 봅니다."
+      : "기록은 이 브라우저의 localStorage에 저장됩니다. 개발 환경이나 Supabase 미설정 상태에서만 이 방식으로 동작합니다."
 
   const leaderName = leaderboard[0]?.displayName ?? "아직 없음"
 
-  function persistHistory(nextHistory: CaughtRecord[]) {
-    setCaughtHistory(nextHistory)
-    saveCaughtHistory(nextHistory)
-  }
-
   async function appendRecord(draft: RecordDraft, successMessage?: string) {
-    const nextRecord = createCaughtRecord(draft)
+    const nextRecord =
+      historyStorageMode === "persistent"
+        ? await createPersistentCaughtHistoryRecord(draft)
+        : createCaughtRecord(draft)
+
     const nextHistory = [...caughtHistoryRef.current, nextRecord]
-    persistHistory(nextHistory)
+
+    if (historyStorageMode === "local") {
+      saveCaughtHistory(nextHistory)
+    }
+
+    setCaughtHistory(nextHistory)
     setNotice({
       tone: "success",
       message: successMessage ?? `${nextRecord.name} 기록을 명예의 전당에 저장했습니다.`,
@@ -161,13 +234,27 @@ export function BetPage() {
     }))
   }
 
-  function handleResetHistory() {
-    persistHistory([])
-    setResetDialogOpen(false)
-    setNotice({
-      tone: "success",
-      message: "명예의 전당 기록을 모두 초기화했습니다.",
-    })
+  async function handleResetHistory() {
+    try {
+      if (historyStorageMode === "persistent") {
+        await clearPersistentCaughtHistory()
+      } else {
+        saveCaughtHistory([])
+      }
+
+      setCaughtHistory([])
+      setResetDialogOpen(false)
+      setNotice({
+        tone: "success",
+        message: "명예의 전당 기록을 모두 초기화했습니다.",
+      })
+    } catch (error) {
+      setResetDialogOpen(false)
+      setNotice({
+        tone: "error",
+        message: error instanceof Error ? error.message : "명예의 전당 기록을 초기화하지 못했습니다.",
+      })
+    }
   }
 
   function renderMainScreen() {
@@ -198,6 +285,7 @@ export function BetPage() {
         return (
           <HomeScreen
             leaderName={leaderName}
+            storageDescription={storageDescription}
             totalRecords={caughtHistory.length}
             uniqueCaughtCount={leaderboard.length}
             onSelectScreen={setCurrentScreen}
@@ -277,6 +365,14 @@ export function BetPage() {
             <aside className="space-y-6">
               <QuickActionPanel
                 historyLoaded={historyLoaded}
+                canResetHistory={historyStorageMode === "local" || isAdmin}
+                storageDescription={
+                  historyStorageMode === "persistent"
+                    ? isAdmin
+                      ? "기록은 Supabase에 영구 저장됩니다. 전체 초기화는 관리자만 공용 기록에 대해 실행할 수 있습니다."
+                      : "기록은 Supabase에 영구 저장됩니다. 전체 초기화는 관리자만 가능합니다."
+                    : storageDescription
+                }
                 onGoHall={() => setCurrentScreen("hall")}
                 onGoHome={() => setCurrentScreen("home")}
                 onOpenManualRecord={() => openManualRecordDialog("manual")}
@@ -330,7 +426,7 @@ export function BetPage() {
             </Button>
             <Button
               type="button"
-              onClick={handleResetHistory}
+              onClick={() => void handleResetHistory()}
               className="h-11 rounded-2xl bg-[#a54141] px-5 text-white hover:bg-[#8f3434]"
             >
               전체 초기화

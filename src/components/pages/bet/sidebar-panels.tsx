@@ -55,12 +55,16 @@ export function AccessBlockedState({ isLoggedIn }: { isLoggedIn: boolean }) {
 
 export function QuickActionPanel({
   historyLoaded,
+  canResetHistory,
+  storageDescription,
   onGoHome,
   onGoHall,
   onOpenManualRecord,
   onReset,
 }: {
   historyLoaded: boolean
+  canResetHistory: boolean
+  storageDescription: string
   onGoHome: () => void
   onGoHall: () => void
   onOpenManualRecord: () => void
@@ -72,18 +76,18 @@ export function QuickActionPanel({
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#8b641d]">Quick Actions</p>
         <h2 className="mt-3 text-2xl font-black tracking-[-0.04em] text-[#18232d]">바로 가기</h2>
         <p className="mt-2 text-sm leading-6 text-[#6b6a64]">
-          홈, 명예의 전당, 수동 기록, 전체 초기화를 여기서 바로 처리할 수 있습니다.
+          홈, 명예의 전당, 수동 기록을 여기서 바로 처리할 수 있습니다.
         </p>
 
         <div className="mt-5 grid gap-3">
           <ActionButton icon={Gamepad2} label="게임 홈" onClick={onGoHome} />
           <ActionButton icon={Trophy} label="명예의 전당" onClick={onGoHall} />
           <ActionButton icon={PencilLine} label="수동 기록" onClick={onOpenManualRecord} />
-          <ActionButton icon={Trash2} label="전체 기록 초기화" onClick={onReset} destructive />
+          {canResetHistory ? <ActionButton icon={Trash2} label="전체 기록 초기화" onClick={onReset} destructive /> : null}
         </div>
 
         <div className="mt-5 rounded-[22px] border border-black/8 bg-white/78 px-4 py-4 text-sm text-[#63727d]">
-          {historyLoaded ? "기록은 이 브라우저의 localStorage에 저장됩니다." : "기록을 불러오는 중입니다..."}
+          {historyLoaded ? storageDescription : "기록을 불러오는 중입니다..."}
         </div>
       </div>
     </Card>

@@ -16,11 +16,13 @@ import type { BetScreen, GameCardItem } from "./types"
 
 export function HomeScreen({
   leaderName,
+  storageDescription,
   totalRecords,
   uniqueCaughtCount,
   onSelectScreen,
 }: {
   leaderName: string
+  storageDescription: string
   totalRecords: number
   uniqueCaughtCount: number
   onSelectScreen: (screen: BetScreen) => void
@@ -63,7 +65,7 @@ export function HomeScreen({
         />
         <InfoBlock
           title="기록 저장 방식"
-          description="기록은 localStorage에 저장됩니다. 새로고침 후에도 남고, 저장 버튼을 누르지 않으면 반영되지 않습니다."
+          description={storageDescription}
           icon={History}
         />
         <InfoBlock
