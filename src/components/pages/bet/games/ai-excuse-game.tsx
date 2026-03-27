@@ -6,7 +6,7 @@ import { RefreshCw, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { AI_EXCUSE_TEMPLATES, parseParticipantNames } from "@/lib/bet-game"
 
-import { EmptyGameState, ScreenHeader, SharedNamesInput } from "../common-ui"
+import { BET_PANEL_CLASS, BET_TINTED_PANEL_CLASS, EmptyGameState, ScreenHeader, SharedNamesInput } from "../common-ui"
 import { pickRandomItem } from "../helpers"
 import type { ResultPayload } from "../types"
 
@@ -84,14 +84,14 @@ export function AIExcuseGame({
       />
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-        <div className="rounded-[28px] border border-black/8 bg-white/82 px-5 py-5">
+        <div className={`${BET_PANEL_CLASS} px-5 py-5`}>
           <SharedNamesInput value={namesInput} onChange={setNamesInput} error={error} />
           <div className="mt-5 flex flex-wrap gap-3">
             <Button
               type="button"
               onClick={handleStart}
               disabled={status === "running"}
-              className="h-11 rounded-full bg-[#f5a623] px-5 text-white hover:bg-[#de941c]"
+              className="h-11 rounded-full bg-[#1f2730] px-5 text-white hover:bg-[#2c3743]"
             >
               {status === "running" ? "핑계 생성 중..." : "당첨 뽑기"}
             </Button>
@@ -107,10 +107,10 @@ export function AIExcuseGame({
           </div>
         </div>
 
-        <div className="rounded-[28px] border border-black/8 bg-[linear-gradient(135deg,rgba(255,241,220,0.94),rgba(255,255,255,0.88))] px-5 py-5">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#8b641d]">
+        <div className={`${BET_TINTED_PANEL_CLASS} bg-[linear-gradient(135deg,rgba(255,255,255,0.9),rgba(241,245,232,0.84),rgba(234,243,248,0.88))] px-5 py-5`}>
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#7b8f99]">
             <Sparkles className="size-4" />
-            Result Stage
+            Result Board
           </div>
 
           {status === "idle" ? (
@@ -120,17 +120,17 @@ export function AIExcuseGame({
             />
           ) : status === "running" ? (
             <div className="mt-10 space-y-5 text-center">
-              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-white/80 shadow-[0_18px_40px_rgba(245,166,35,0.18)]">
-                <Sparkles className="size-9 animate-pulse text-[#f5a623]" />
+              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-white/82 shadow-[0_18px_40px_rgba(47,74,91,0.12)]">
+                <Sparkles className="size-9 animate-pulse text-[#567289]" />
               </div>
-              <p className="text-3xl font-black tracking-[-0.04em] text-[#18232d]">핑계 조합 중...</p>
-              <p className="text-sm leading-6 text-[#6f6b60]">시스템이 가장 자연스럽게 걸릴 사람을 분석하고 있습니다.</p>
+              <p className="text-3xl font-black tracking-tight text-[#15212b]">핑계 조합 중...</p>
+              <p className="text-sm leading-6 text-[#677680]">시스템이 가장 자연스럽게 걸릴 사람을 분석하고 있습니다.</p>
             </div>
           ) : (
             <div className="mt-8">
-              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#9a6c2e]">최종 당첨</p>
-              <p className="mt-4 text-4xl font-black tracking-[-0.05em] text-[#18232d]">{loserName}</p>
-              <div className="mt-6 rounded-[24px] border border-[#f1d39e] bg-white/76 px-5 py-5 text-base leading-7 text-[#5f5648]">
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#6a7d88]">최종 당첨</p>
+              <p className="mt-4 text-4xl font-black tracking-tight text-[#15212b]">{loserName}</p>
+              <div className="mt-6 rounded-[24px] border border-[#dae6eb] bg-white/82 px-5 py-5 text-base leading-7 text-[#576a75] shadow-[0_12px_28px_rgba(47,74,91,0.05)]">
                 {reason}
               </div>
               <div className="mt-6 flex flex-wrap gap-3">
@@ -143,7 +143,7 @@ export function AIExcuseGame({
                       detail: reason,
                     })
                   }
-                  className="h-11 rounded-full bg-[#1f2730] px-5 text-white hover:bg-[#2b3642]"
+                  className="h-11 rounded-full bg-[#1f2730] px-5 text-white hover:bg-[#2c3743]"
                 >
                   기록하기
                 </Button>

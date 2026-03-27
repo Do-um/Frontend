@@ -37,18 +37,18 @@ export function formatElapsedSeconds(milliseconds: number) {
 
 export function getRankAccent(rank: number) {
   if (rank === 0) {
-    return "border-[#ffd66b] bg-[linear-gradient(135deg,rgba(255,237,176,0.95),rgba(255,204,102,0.75))]"
+    return "border-[#e7dcc0] bg-[linear-gradient(135deg,rgba(249,242,224,0.96),rgba(255,255,255,0.86))]"
   }
 
   if (rank === 1) {
-    return "border-[#d9dfe7] bg-[linear-gradient(135deg,rgba(241,245,249,0.96),rgba(212,222,233,0.75))]"
+    return "border-[#d7e5ee] bg-[linear-gradient(135deg,rgba(238,244,249,0.96),rgba(255,255,255,0.86))]"
   }
 
   if (rank === 2) {
-    return "border-[#e8c1a0] bg-[linear-gradient(135deg,rgba(255,234,222,0.94),rgba(229,183,140,0.75))]"
+    return "border-[#e4dbd2] bg-[linear-gradient(135deg,rgba(245,239,232,0.94),rgba(255,255,255,0.86))]"
   }
 
-  return "border-black/8 bg-white/84"
+  return "border-white/80 bg-white/84"
 }
 
 export function getRankIcon(rank: number) {

@@ -26,7 +26,7 @@ function formatBetHistoryErrorMessage(error: { message: string } | null, fallbac
   const normalizedMessage = message.toLowerCase()
 
   if (normalizedMessage.includes("permission denied") || normalizedMessage.includes("row-level security")) {
-    return `${fallbackMessage} Supabase RLS 정책과 마이그레이션 적용 여부를 확인해 주세요.`
+    return `${fallbackMessage} Supabase RLS 정책, 테이블 GRANT 권한, 마이그레이션 적용 여부를 확인해 주세요.`
   }
 
   if (normalizedMessage.includes("does not exist") || normalizedMessage.includes("schema cache")) {

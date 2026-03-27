@@ -11,7 +11,7 @@ export const GAME_CARDS: GameCardItem[] = [
     description: "미리 준비된 드립 템플릿으로 한 명을 재밌게 지목합니다.",
     eyebrow: "API 없는 랜덤 핑계",
     icon: Sparkles,
-    accentClassName: "from-[#ffe3b0] via-[#ffd28c] to-[#ffb86b]",
+    accentClassName: "from-[#f8f1df] via-[#eef4e7] to-[#e6eff7]",
   },
   {
     screen: "bomb_pass",
@@ -19,7 +19,7 @@ export const GAME_CARDS: GameCardItem[] = [
     description: "제한 시간 안에서 터질 시점이 랜덤으로 정해지는 순환형 내기입니다.",
     eyebrow: "실시간 순서 게임",
     icon: Bomb,
-    accentClassName: "from-[#ffc3c3] via-[#ff9d8d] to-[#ff6f61]",
+    accentClassName: "from-[#f7e9e5] via-[#f3f2ed] to-[#eaf0f5]",
   },
   {
     screen: "ladder",
@@ -27,7 +27,7 @@ export const GAME_CARDS: GameCardItem[] = [
     description: "랜덤 가로줄을 따라 내려가 걸림 슬롯에 도착한 사람을 찾습니다.",
     eyebrow: "경로 추적 애니메이션",
     icon: GitBranch,
-    accentClassName: "from-[#c5f0d0] via-[#a8e7ca] to-[#6fd1b3]",
+    accentClassName: "from-[#e6f0e8] via-[#edf5ef] to-[#f4f7f0]",
   },
   {
     screen: "roulette",
@@ -35,7 +35,7 @@ export const GAME_CARDS: GameCardItem[] = [
     description: "내장 룰렛을 바로 돌리고 결과를 자동으로 명예의 전당에 누적합니다.",
     eyebrow: "내장형 자동 기록",
     icon: CirclePlay,
-    accentClassName: "from-[#cbe2ff] via-[#9fc7ff] to-[#70a8ff]",
+    accentClassName: "from-[#dde9f7] via-[#eaf2f6] to-[#f4f7f1]",
   },
 ]
 
@@ -48,10 +48,10 @@ export const MODE_SHORT_LABELS: Record<CaughtMode, string> = {
 }
 
 export const MODE_BADGE_CLASSNAMES: Record<CaughtMode, string> = {
-  ai_excuse: "border-[#ffd8a8] bg-[#fff5e8] text-[#8b5a15]",
-  bomb_pass: "border-[#ffc9c9] bg-[#fff1f1] text-[#9a3f3f]",
-  ladder: "border-[#bee5cf] bg-[#eefaf1] text-[#20684b]",
-  roulette_manual: "border-[#c7d9ff] bg-[#f0f5ff] text-[#3157a8]",
+  ai_excuse: "border-[#e8dcc1] bg-[#fbf5e8] text-[#7a6841]",
+  bomb_pass: "border-[#ead7d3] bg-[#faf2ef] text-[#7d5a54]",
+  ladder: "border-[#d8e6dc] bg-[#eef5ef] text-[#476755]",
+  roulette_manual: "border-[#d4e1ef] bg-[#eef4fb] text-[#4a647d]",
   manual: "border-[#d6d9dd] bg-[#f6f7f8] text-[#4b5563]",
 }
 

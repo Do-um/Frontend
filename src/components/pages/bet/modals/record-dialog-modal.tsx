@@ -87,10 +87,10 @@ export function RecordDialogModal({
         }
       }}
     >
-      <DialogContent className="max-w-lg rounded-[30px] border border-[#ddd8cd] bg-[linear-gradient(180deg,rgba(255,252,245,0.98),rgba(248,250,255,0.96))] p-6 shadow-[0_28px_80px_rgba(24,35,45,0.16)]">
+      <DialogContent className="max-w-lg rounded-[32px] border border-white/75 bg-[#f5f7f2] p-6 shadow-[0_32px_90px_rgba(24,39,54,0.2)]">
         <DialogHeader className="text-left">
-          <DialogTitle className="text-2xl font-black tracking-[-0.04em] text-[#18232d]">{state.title}</DialogTitle>
-          <DialogDescription className="mt-2 text-sm leading-6 text-[#61727d]">
+          <DialogTitle className="text-2xl font-black tracking-tight text-[#15212b]">{state.title}</DialogTitle>
+          <DialogDescription className="mt-2 text-sm leading-6 text-[#677680]">
             {state.description}
           </DialogDescription>
         </DialogHeader>
@@ -106,7 +106,7 @@ export function RecordDialogModal({
               value={name}
               onChange={(event) => setName(event.target.value)}
               placeholder="이름 입력"
-              className="h-12 rounded-[22px] border-[#d7e4eb] bg-white/90 px-4 text-sm text-[#213541]"
+              className="h-12 rounded-[22px] border-[#d7e4eb] bg-white/90 px-4 text-sm text-[#213541] shadow-[0_8px_20px_rgba(47,74,91,0.04)]"
               required
             />
             <datalist id="bet-known-names">
@@ -134,7 +134,7 @@ export function RecordDialogModal({
                 ))}
               </select>
             ) : (
-              <div className="rounded-[22px] border border-[#d7e4eb] bg-white/86 px-4 py-3 text-sm font-semibold text-[#243440]">
+              <div className="rounded-[22px] border border-[#d7e4eb] bg-white/86 px-4 py-3 text-sm font-semibold text-[#243440] shadow-[0_8px_20px_rgba(47,74,91,0.04)]">
                 {CAUGHT_MODE_LABELS[mode]}
               </div>
             )}
@@ -150,20 +150,20 @@ export function RecordDialogModal({
                 value={detail}
                 onChange={(event) => setDetail(event.target.value)}
                 placeholder="선택 입력"
-                className="min-h-[112px] rounded-[22px] border-[#d7e4eb] bg-white/90 px-4 py-3 text-sm leading-6 text-[#213541]"
+                className="min-h-[112px] rounded-[22px] border-[#d7e4eb] bg-white/90 px-4 py-3 text-sm leading-6 text-[#213541] shadow-[0_8px_20px_rgba(47,74,91,0.04)]"
               />
             </div>
           ) : state.detail ? (
             <div className="space-y-2">
               <p className="text-sm font-semibold text-[#243440]">상세 결과</p>
-              <div className="rounded-[24px] border border-[#e3ddd0] bg-white/80 px-4 py-4 text-sm leading-6 text-[#5d6d78]">
+              <div className="rounded-[24px] border border-[#dae6eb] bg-white/82 px-4 py-4 text-sm leading-6 text-[#5d6d78] shadow-[0_10px_24px_rgba(47,74,91,0.05)]">
                 {state.detail}
               </div>
             </div>
           ) : null}
 
           {error ? (
-            <p className="rounded-[20px] border border-[#f0cfcf] bg-[#fff6f6] px-4 py-3 text-sm font-semibold text-[#9a3b3b]">
+            <p className="rounded-[20px] border border-[#ead7d3] bg-white/86 px-4 py-3 text-sm font-semibold text-[#8a5750]">
               {error}
             </p>
           ) : null}
@@ -174,11 +174,11 @@ export function RecordDialogModal({
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={saving}
-              className="h-11 rounded-2xl border-[#d8e4eb] bg-white px-4 text-[#355264]"
+              className="h-11 rounded-full border-[#d7e5ee] bg-white px-4 text-[#355264] hover:bg-[#f5fbfe]"
             >
               취소
             </Button>
-            <Button type="submit" disabled={saving} className="h-11 rounded-2xl bg-[#1f2730] px-5 text-white hover:bg-[#2b3642]">
+            <Button type="submit" disabled={saving} className="h-11 rounded-full bg-[#1f2730] px-5 text-white hover:bg-[#2c3743]">
               {saving ? "저장 중..." : "기록하기"}
             </Button>
           </DialogFooter>

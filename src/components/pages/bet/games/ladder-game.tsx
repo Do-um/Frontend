@@ -15,7 +15,7 @@ import {
 } from "@/lib/bet-game"
 import { cn } from "@/lib/utils"
 
-import { EmptyGameState, ScreenHeader, SharedNamesInput } from "../common-ui"
+import { BET_PANEL_CLASS, BET_TINTED_PANEL_CLASS, EmptyGameState, ScreenHeader, SharedNamesInput } from "../common-ui"
 import { LADDER_TRACE_COLORS } from "../constants"
 import type { ResultPayload } from "../types"
 
@@ -133,14 +133,14 @@ export function LadderGame({
       />
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,0.84fr)_minmax(0,1.16fr)]">
-        <div className="rounded-[28px] border border-black/8 bg-white/82 px-5 py-5">
+        <div className={`${BET_PANEL_CLASS} px-5 py-5`}>
           <SharedNamesInput value={namesInput} onChange={setNamesInput} error={error} />
           <div className="mt-5 flex flex-wrap gap-3">
             <Button
               type="button"
               onClick={handleStart}
               disabled={status === "tracing"}
-              className="h-11 rounded-full bg-[#23a36d] px-5 text-white hover:bg-[#1d905f]"
+              className="h-11 rounded-full bg-[#1f2730] px-5 text-white hover:bg-[#2c3743]"
             >
               {status === "tracing" ? "경로 추적 중..." : "사다리 시작"}
             </Button>
@@ -156,13 +156,13 @@ export function LadderGame({
           </div>
         </div>
 
-        <div className="rounded-[28px] border border-black/8 bg-[linear-gradient(135deg,rgba(229,252,236,0.92),rgba(255,255,255,0.9))] px-5 py-5">
+        <div className={`${BET_TINTED_PANEL_CLASS} bg-[linear-gradient(135deg,rgba(255,255,255,0.9),rgba(236,244,239,0.84),rgba(234,243,248,0.88))] px-5 py-5`}>
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#2d7a58]">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#7b8f99]">
               <GitBranch className="size-4" />
               Ladder Board
             </div>
-            <span className="rounded-full border border-white/72 bg-white/72 px-3 py-2 text-xs font-semibold text-[#35624b]">
+            <span className="rounded-full border border-white/80 bg-white/82 px-3 py-2 text-xs font-semibold text-[#5e7482] shadow-sm">
               {activeTraceLabel}
             </span>
           </div>
@@ -181,14 +181,14 @@ export function LadderGame({
                 {players.map((player, index) => (
                   <div
                     key={`ladder-top-${index}`}
-                    className="truncate rounded-full border border-white/70 bg-white/82 px-3 py-2 text-sm font-semibold text-[#214236]"
+                    className="truncate rounded-full border border-white/80 bg-white/82 px-3 py-2 text-sm font-semibold text-[#355264] shadow-sm"
                   >
                     {player}
                   </div>
                 ))}
               </div>
 
-              <div className="overflow-x-auto rounded-[28px] border border-white/75 bg-white/62 p-4">
+              <div className="overflow-x-auto rounded-[28px] border border-white/80 bg-white/76 p-4 shadow-[0_12px_28px_rgba(47,74,91,0.05)]">
                 <div style={{ minWidth: `${geometry.width}px` }}>
                   <svg
                     width="100%"
@@ -203,7 +203,7 @@ export function LadderGame({
                         y1={geometry.topY}
                         x2={xPosition}
                         y2={geometry.bottomY}
-                        stroke="#97b8a7"
+                        stroke="#a0b7c5"
                         strokeWidth="4"
                         strokeLinecap="round"
                       />
@@ -223,7 +223,7 @@ export function LadderGame({
                             y1={rowY}
                             x2={geometry.xPositions[index + 1]}
                             y2={rowY}
-                            stroke="#6cb58e"
+                            stroke="#7ea3ba"
                             strokeWidth="5"
                             strokeLinecap="round"
                           />
@@ -268,23 +268,23 @@ export function LadderGame({
                   return (
                     <div
                       key={`ladder-bottom-${index}`}
-                      className={cn(
-                        "rounded-[22px] border px-3 py-3 text-sm font-semibold shadow-[0_10px_24px_rgba(24,35,45,0.04)]",
-                        isLoserSlot
-                          ? "border-[#ffb0a8] bg-[#fff1ee] text-[#9c4a43]"
-                          : "border-white/72 bg-white/82 text-[#3c5d4c]",
-                      )}
-                    >
-                      {isLoserSlot ? "걸림" : "통과"}
+                    className={cn(
+                      "rounded-[22px] border px-3 py-3 text-sm font-semibold shadow-[0_10px_24px_rgba(24,35,45,0.04)]",
+                      isLoserSlot
+                          ? "border-[#e4dbd2] bg-[#f6efea] text-[#7d5a54]"
+                          : "border-white/80 bg-white/82 text-[#355264]",
+                    )}
+                  >
+                    {isLoserSlot ? "걸림" : "통과"}
                     </div>
                   )
                 })}
               </div>
 
               {status === "result" ? (
-                <div className="rounded-[26px] border border-[#c6ead5] bg-white/76 px-5 py-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#2e7d5a]">최종 결과</p>
-                  <p className="mt-3 text-3xl font-black tracking-[-0.05em] text-[#18232d]">{loserName}</p>
+                <div className="rounded-[26px] border border-[#dbe6eb] bg-white/82 px-5 py-5 shadow-[0_10px_24px_rgba(47,74,91,0.05)]">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7b8f99]">최종 결과</p>
+                  <p className="mt-3 text-3xl font-black tracking-tight text-[#15212b]">{loserName}</p>
                   <p className="mt-3 text-sm leading-6 text-[#587066]">{resultDetail}</p>
                   <div className="mt-5 flex flex-wrap gap-3">
                     <Button
@@ -296,7 +296,7 @@ export function LadderGame({
                           detail: resultDetail,
                         })
                       }
-                      className="h-11 rounded-full bg-[#1f2730] px-5 text-white hover:bg-[#2b3642]"
+                      className="h-11 rounded-full bg-[#1f2730] px-5 text-white hover:bg-[#2c3743]"
                     >
                       기록하기
                     </Button>

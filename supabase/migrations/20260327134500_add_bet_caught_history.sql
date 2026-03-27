@@ -38,6 +38,9 @@ on public.bet_caught_history(created_at desc);
 create index if not exists idx_bet_caught_history_normalized_name
 on public.bet_caught_history(normalized_name);
 
+revoke all on table public.bet_caught_history from anon;
+grant select, insert, delete on table public.bet_caught_history to authenticated;
+
 alter table public.bet_caught_history enable row level security;
 
 drop policy if exists "bet history doum read" on public.bet_caught_history;

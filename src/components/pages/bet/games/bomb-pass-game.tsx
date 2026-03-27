@@ -1,14 +1,14 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
-import { Bomb, RefreshCw, TriangleAlert } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import { Bomb, RefreshCw } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { parseParticipantNames } from "@/lib/bet-game"
 import { cn } from "@/lib/utils"
 
-import { EmptyGameState, ScreenHeader, SharedNamesInput } from "../common-ui"
+import { BET_PANEL_CLASS, BET_TINTED_PANEL_CLASS, EmptyGameState, ScreenHeader, SharedNamesInput } from "../common-ui"
 import { formatElapsedSeconds } from "../helpers"
 import type { ResultPayload } from "../types"
 
@@ -179,7 +179,7 @@ export function BombPassGame({
       />
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)]">
-        <div className="rounded-[28px] border border-black/8 bg-white/82 px-5 py-5">
+        <div className={`${BET_PANEL_CLASS} px-5 py-5`}>
           <SharedNamesInput value={namesInput} onChange={setNamesInput} error={error} />
           <div className="mt-5 space-y-3">
             <label className="text-sm font-semibold text-[#243440]">제한 시간(초)</label>
@@ -197,7 +197,7 @@ export function BombPassGame({
               type="button"
               onClick={handleStart}
               disabled={status === "running"}
-              className="h-11 rounded-full bg-[#ff6f61] px-5 text-white hover:bg-[#ec5f51]"
+              className="h-11 rounded-full bg-[#1f2730] px-5 text-white hover:bg-[#2c3743]"
             >
               {status === "running" ? "진행 중..." : "시작"}
             </Button>
@@ -215,15 +215,15 @@ export function BombPassGame({
 
         <div
           className={cn(
-            "rounded-[28px] border border-black/8 px-5 py-5 transition",
+            `${BET_TINTED_PANEL_CLASS} px-5 py-5 transition`,
             boomActive
-              ? "bg-[linear-gradient(135deg,rgba(255,210,210,0.95),rgba(255,240,240,0.92))] shadow-[0_0_0_4px_rgba(255,111,97,0.16)]"
-              : "bg-[linear-gradient(135deg,rgba(255,235,232,0.92),rgba(255,255,255,0.9))]",
+              ? "bg-[linear-gradient(135deg,rgba(247,232,228,0.96),rgba(255,255,255,0.9))] shadow-[0_0_0_4px_rgba(222,206,201,0.22)]"
+              : "bg-[linear-gradient(135deg,rgba(255,255,255,0.9),rgba(242,236,233,0.86),rgba(234,243,248,0.88))]",
           )}
         >
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#a4524a]">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#7b8f99]">
             <Bomb className="size-4" />
-            Bomb Stage
+            Bomb Board
           </div>
 
           {status === "idle" ? (
@@ -233,15 +233,15 @@ export function BombPassGame({
             />
           ) : (
             <div className="mt-7 space-y-6">
-              <div className="rounded-[28px] border border-white/70 bg-white/72 px-5 py-6 text-center shadow-[0_16px_36px_rgba(24,35,45,0.05)]">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#9a5a52]">
+              <div className="rounded-[28px] border border-white/80 bg-white/82 px-5 py-6 text-center shadow-[0_16px_36px_rgba(47,74,91,0.08)]">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7b8f99]">
                   {status === "running" ? "현재 차례" : "걸린 사람"}
                 </p>
-                <p className="mt-4 text-4xl font-black tracking-[-0.05em] text-[#18232d]">
+                <p className="mt-4 text-4xl font-black tracking-tight text-[#15212b]">
                   {status === "running" ? currentPlayerName : loserName}
                 </p>
-                <div className="mt-5 mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[#fff3f1] shadow-[0_18px_40px_rgba(255,111,97,0.18)]">
-                  <Bomb className={cn("size-10 text-[#ff6f61]", status === "running" ? "animate-pulse" : "")} />
+                <div className="mt-5 mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[#f4f0ee] shadow-[0_18px_40px_rgba(47,74,91,0.12)]">
+                  <Bomb className={cn("size-10 text-[#7d5a54]", status === "running" ? "animate-pulse" : "")} />
                 </div>
               </div>
 
@@ -250,9 +250,9 @@ export function BombPassGame({
                   <span>진행 시간 {formatElapsedSeconds(elapsedMs)}</span>
                   <span>제한 {limitSeconds.toFixed(0)}초</span>
                 </div>
-                <div className="mt-3 h-3 overflow-hidden rounded-full bg-white/72">
+                <div className="mt-3 h-3 overflow-hidden rounded-full bg-white/82">
                   <div
-                    className="h-full rounded-full bg-[linear-gradient(90deg,#ff8a7d,#ff6f61)] transition-all"
+                    className="h-full rounded-full bg-[linear-gradient(90deg,#9ebad0,#6f8590)] transition-all"
                     style={{ width: `${progressPercent}%` }}
                   />
                 </div>
@@ -265,10 +265,10 @@ export function BombPassGame({
                     className={cn(
                       "rounded-[22px] border px-4 py-4 text-sm font-semibold transition",
                       status === "running" && index === currentPlayerIndex
-                        ? "border-[#ff8f80] bg-[#fff2ef] text-[#9a463f] shadow-[0_14px_30px_rgba(255,111,97,0.14)]"
+                        ? "border-[#d8e4eb] bg-[#eef6fb] text-[#355264] shadow-[0_14px_30px_rgba(47,74,91,0.12)]"
                         : status === "result" && player === loserName
-                          ? "border-[#ff9f92] bg-[#fff1ee] text-[#9a463f]"
-                          : "border-black/8 bg-white/76 text-[#475964]",
+                          ? "border-[#e4dbd2] bg-[#f6efea] text-[#7d5a54]"
+                          : "border-[#dbe6eb] bg-white/82 text-[#475964]",
                     )}
                   >
                     {player}
@@ -281,7 +281,7 @@ export function BombPassGame({
                   type="button"
                   onClick={handlePass}
                   disabled={status !== "running"}
-                  className="h-12 rounded-full bg-[#1f2730] px-6 text-white hover:bg-[#2b3642]"
+                  className="h-12 rounded-full bg-[#1f2730] px-6 text-white hover:bg-[#2c3743]"
                 >
                   넘기기
                 </Button>
@@ -305,9 +305,9 @@ export function BombPassGame({
               </div>
 
               {status === "result" ? (
-                <div className="rounded-[24px] border border-[#f0c9c9] bg-white/76 px-5 py-5 text-sm leading-6 text-[#6a4f4b]">
+                <div className="rounded-[24px] border border-[#dae6eb] bg-white/82 px-5 py-5 text-sm leading-6 text-[#596974] shadow-[0_10px_24px_rgba(47,74,91,0.05)]">
                   {resultDetail}
-                  <div className="mt-3 text-xs font-semibold text-[#8e5d56]">
+                  <div className="mt-3 text-xs font-semibold text-[#7b8f99]">
                     랜덤 폭발 시점: {formatElapsedSeconds(explodeTimeMs)}
                   </div>
                 </div>

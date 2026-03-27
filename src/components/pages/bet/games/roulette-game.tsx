@@ -6,7 +6,7 @@ import { AlertTriangle, ExternalLink, LoaderCircle, RefreshCw, Sparkles } from "
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
-import { ScreenHeader } from "../common-ui"
+import { BET_PANEL_CLASS, BET_TINTED_PANEL_CLASS, ScreenHeader } from "../common-ui"
 
 const EMBEDDED_ROULETTE_URL = "/vendor/roulette/index.html?embed=1&v=20260327-2"
 const SOURCE_REPOSITORY_URL = "https://github.com/lazygyu/roulette"
@@ -235,11 +235,11 @@ export function RouletteGame({
       />
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.18fr)_minmax(320px,0.82fr)]">
-        <div className="overflow-hidden rounded-[30px] border border-black/8 bg-[#0e1721] shadow-[0_20px_60px_rgba(24,35,45,0.12)]">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-[linear-gradient(135deg,rgba(20,31,43,0.98),rgba(40,66,95,0.9))] px-5 py-4 text-white">
+        <div className={`${BET_PANEL_CLASS} overflow-hidden`}>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#d7e5ee] bg-[linear-gradient(135deg,rgba(255,255,255,0.9),rgba(234,243,248,0.84))] px-5 py-4 text-[#1f2730]">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/70">Embedded Vendor App</p>
-              <p className="mt-2 text-lg font-black tracking-[-0.04em]">lazygyu Marble Roulette</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7b8f99]">Embedded Vendor App</p>
+              <p className="mt-2 text-lg font-black tracking-tight">lazygyu Marble Roulette</p>
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -247,7 +247,7 @@ export function RouletteGame({
                 type="button"
                 variant="outline"
                 onClick={handleReloadFrame}
-                className="h-10 rounded-full border-white/20 bg-white/10 px-4 text-white hover:bg-white/16"
+                className="h-10 rounded-full border-[#d7e5ee] bg-white/82 px-4 text-[#355264] hover:bg-[#f5fbfe]"
               >
                 <RefreshCw className="size-4" />
                 다시 불러오기
@@ -256,7 +256,7 @@ export function RouletteGame({
                 type="button"
                 variant="outline"
                 asChild
-                className="h-10 rounded-full border-white/20 bg-white/10 px-4 text-white hover:bg-white/16"
+                className="h-10 rounded-full border-[#d7e5ee] bg-white/82 px-4 text-[#355264] hover:bg-[#f5fbfe]"
               >
                 <a href={EMBEDDED_ROULETTE_URL} target="_blank" rel="noreferrer">
                   새 탭
@@ -266,20 +266,20 @@ export function RouletteGame({
             </div>
           </div>
 
-          <div className="relative bg-[#0b1218]">
+          <div className="relative bg-[#edf3f6]">
             {frameStatus === "loading" || frameStatus === "error" ? (
-              <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-[linear-gradient(180deg,rgba(11,18,24,0.72),rgba(11,18,24,0.4))]">
-                <div className="rounded-[26px] border border-white/12 bg-black/30 px-5 py-4 text-center text-white backdrop-blur-sm">
+              <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-[linear-gradient(180deg,rgba(237,243,246,0.82),rgba(237,243,246,0.56))]">
+                <div className="rounded-[26px] border border-white/80 bg-white/82 px-5 py-4 text-center text-[#1f2730] shadow-[0_18px_40px_rgba(47,74,91,0.12)] backdrop-blur-sm">
                   {frameStatus === "error" ? (
-                    <AlertTriangle className="mx-auto size-6 text-[#ffb4b4]" />
+                    <AlertTriangle className="mx-auto size-6 text-[#8a5750]" />
                   ) : (
-                    <LoaderCircle className="mx-auto size-6 animate-spin" />
+                    <LoaderCircle className="mx-auto size-6 animate-spin text-[#567289]" />
                   )}
                   <p className="mt-3 text-sm font-semibold">
                     {frameStatus === "error" ? "룰렛 앱 로딩에 실패했습니다." : "룰렛 앱을 준비하는 중입니다."}
                   </p>
                   {frameStatus === "error" ? (
-                    <p className="mt-2 max-w-[360px] text-sm leading-6 text-white/78">{frameError}</p>
+                    <p className="mt-2 max-w-[360px] text-sm leading-6 text-[#677680]">{frameError}</p>
                   ) : null}
                 </div>
               </div>
@@ -291,14 +291,14 @@ export function RouletteGame({
               src={EMBEDDED_ROULETTE_URL}
               title="lazygyu Marble Roulette"
               onLoad={handleFrameLoad}
-              className="block h-[980px] w-full border-0 bg-[#0b1218]"
+              className="block h-[980px] w-full border-0 bg-white"
             />
           </div>
         </div>
 
         <div className="space-y-4">
-          <div className="rounded-[28px] border border-black/8 bg-[linear-gradient(135deg,rgba(236,244,255,0.96),rgba(255,249,240,0.9))] px-5 py-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#4e6d96]">Auto Hall Of Fame</p>
+          <div className={`${BET_TINTED_PANEL_CLASS} bg-[linear-gradient(135deg,rgba(255,255,255,0.9),rgba(233,242,247,0.86),rgba(244,247,240,0.84))] px-5 py-5`}>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7b8f99]">Auto Hall Of Fame</p>
             <p className="mt-3 text-sm leading-6 text-[#576a77]">
               룰렛 내부에서 `Start`를 누르면 원본 게임 로직이 그대로 실행되고, 결승선 통과 시점의 당첨자를 즉시
               받아 저장합니다.
@@ -308,10 +308,10 @@ export function RouletteGame({
               className={cn(
                 "mt-5 rounded-[24px] border px-4 py-4",
                 saveState === "saved"
-                  ? "border-[#c9e2d0] bg-white/82"
+                  ? "border-[#d5e4db] bg-white/84"
                   : saveState === "error"
-                    ? "border-[#f0cfcf] bg-[#fff7f7]"
-                    : "border-[#d7e3f2] bg-white/76",
+                    ? "border-[#ead7d3] bg-white/84"
+                    : "border-[#d7e5ee] bg-white/82",
               )}
             >
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#587089]">
@@ -333,7 +333,7 @@ export function RouletteGame({
                   ? "당첨 결과가 명예의 전당과 최근 기록에 자동 반영되었습니다."
                   : saveState === "error"
                     ? saveError
-                    : saveState === "saving"
+                  : saveState === "saving"
                       ? "당첨 결과를 저장하는 중입니다."
                       : frameStatus === "error"
                         ? frameError
@@ -347,7 +347,7 @@ export function RouletteGame({
                   type="button"
                   variant="outline"
                   onClick={() => void handleRetrySave()}
-                  className="mt-4 h-10 rounded-full border-[#e3c9c9] bg-white px-4 text-[#8f4a4a]"
+                  className="mt-4 h-10 rounded-full border-[#d7e5ee] bg-white px-4 text-[#355264] hover:bg-[#f5fbfe]"
                 >
                   자동 저장 다시 시도
                 </Button>
@@ -355,26 +355,26 @@ export function RouletteGame({
             </div>
           </div>
 
-          <div className="rounded-[28px] border border-black/8 bg-white/84 px-5 py-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#6f8190]">Latest Result</p>
-            <p className="mt-3 text-3xl font-black tracking-[-0.05em] text-[#18232d]">
+          <div className={`${BET_PANEL_CLASS} px-5 py-5`}>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7b8f99]">Latest Result</p>
+            <p className="mt-3 text-3xl font-black tracking-tight text-[#15212b]">
               {latestResult?.winner ?? "아직 없음"}
             </p>
-            <p className="mt-3 text-sm leading-6 text-[#5f707b]">
+            <p className="mt-3 text-sm leading-6 text-[#60717d]">
               {latestResult
                 ? `${latestResult.totalCount}개 구슬 중 ${latestResult.winningRank}등 결과를 기록했습니다.`
                 : "최근 당첨자가 나오면 여기서 이름과 저장 상태를 바로 확인할 수 있습니다."}
             </p>
             {latestResult ? (
-              <div className="mt-4 rounded-[22px] border border-[#dce6f2] bg-[#f7fbff] px-4 py-4 text-sm leading-6 text-[#506673]">
+              <div className="mt-4 rounded-[22px] border border-[#dbe6eb] bg-white/82 px-4 py-4 text-sm leading-6 text-[#506673] shadow-[0_10px_24px_rgba(47,74,91,0.05)]">
                 {latestResult.detail}
               </div>
             ) : null}
           </div>
 
-          <div className="rounded-[28px] border border-black/8 bg-white/84 px-5 py-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#6f8190]">License</p>
-            <p className="mt-3 text-sm leading-6 text-[#5f707b]">
+          <div className={`${BET_PANEL_CLASS} px-5 py-5`}>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7b8f99]">License</p>
+            <p className="mt-3 text-sm leading-6 text-[#60717d]">
               이 룰렛은 MIT 라이선스의 lazygyu/roulette 소스를 내장한 것입니다.
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
@@ -382,7 +382,7 @@ export function RouletteGame({
                 type="button"
                 variant="outline"
                 asChild
-                className="h-10 rounded-full border-[#d8e4eb] bg-white px-4 text-[#355264]"
+                className="h-10 rounded-full border-[#d7e5ee] bg-white px-4 text-[#355264] hover:bg-[#f5fbfe]"
               >
                 <a href={SOURCE_REPOSITORY_URL} target="_blank" rel="noreferrer">
                   원본 저장소
@@ -393,7 +393,7 @@ export function RouletteGame({
                 type="button"
                 variant="outline"
                 asChild
-                className="h-10 rounded-full border-[#d8e4eb] bg-white px-4 text-[#355264]"
+                className="h-10 rounded-full border-[#d7e5ee] bg-white px-4 text-[#355264] hover:bg-[#f5fbfe]"
               >
                 <a href={LICENSE_URL} target="_blank" rel="noreferrer">
                   MIT 라이선스
