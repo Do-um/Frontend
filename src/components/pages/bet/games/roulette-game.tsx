@@ -8,9 +8,11 @@ import { cn } from "@/lib/utils"
 
 import { ScreenHeader } from "../common-ui"
 
-const EMBEDDED_ROULETTE_URL = "/vendor/roulette/index.html?embed=1"
+const EMBEDDED_ROULETTE_URL = "/vendor/roulette/index.html?embed=1&v=20260327-2"
 const SOURCE_REPOSITORY_URL = "https://github.com/lazygyu/roulette"
 const LICENSE_URL = "/vendor/roulette/LICENSE.txt"
+const FRAME_READY_TIMEOUT_MS = 15000
+const FRAME_READY_POLL_MS = 250
 
 type AutoRecordPayload = {
   name: string
@@ -88,7 +90,20 @@ export function RouletteGame({
   const frameRef = useRef<HTMLIFrameElement | null>(null)
   const lastPayloadRef = useRef<AutoRecordPayload | null>(null)
   const handledEventIdsRef = useRef<Set<string>>(new Set())
-  const frameCheckTimerRef = useRef<number | null>(null)
+  const frameCheckIntervalRef = useRef<number | null>(null)
+  const frameCheckTimeoutRef = useRef<number | null>(null)
+
+  function clearFrameCheckTimers() {
+    if (frameCheckIntervalRef.current !== null) {
+      window.clearInterval(frameCheckIntervalRef.current)
+      frameCheckIntervalRef.current = null
+    }
+
+    if (frameCheckTimeoutRef.current !== null) {
+      window.clearTimeout(frameCheckTimeoutRef.current)
+      frameCheckTimeoutRef.current = null
+    }
+  }
 
   useEffect(() => {
     function handleMessage(event: MessageEvent<unknown>) {
@@ -97,22 +112,14 @@ export function RouletteGame({
       }
 
       if (isRouletteReadyMessage(event.data)) {
-        if (frameCheckTimerRef.current !== null) {
-          window.clearTimeout(frameCheckTimerRef.current)
-          frameCheckTimerRef.current = null
-        }
-
+        clearFrameCheckTimers()
         setFrameError("")
         setFrameStatus("ready")
         return
       }
 
       if (isRouletteErrorMessage(event.data)) {
-        if (frameCheckTimerRef.current !== null) {
-          window.clearTimeout(frameCheckTimerRef.current)
-          frameCheckTimerRef.current = null
-        }
-
+        clearFrameCheckTimers()
         setFrameError(event.data.message)
         setFrameStatus("error")
         return
@@ -147,10 +154,7 @@ export function RouletteGame({
 
     window.addEventListener("message", handleMessage)
     return () => {
-      if (frameCheckTimerRef.current !== null) {
-        window.clearTimeout(frameCheckTimerRef.current)
-      }
-
+      clearFrameCheckTimers()
       window.removeEventListener("message", handleMessage)
     }
   }, [onAutoRecord])
@@ -173,27 +177,53 @@ export function RouletteGame({
   }
 
   function handleReloadFrame() {
+    clearFrameCheckTimers()
     setFrameKey((current) => current + 1)
     setFrameStatus("loading")
     setFrameError("")
   }
 
   function handleFrameLoad() {
-    if (frameCheckTimerRef.current !== null) {
-      window.clearTimeout(frameCheckTimerRef.current)
-    }
-
-    setFrameStatus("ready")
+    clearFrameCheckTimers()
+    setFrameStatus("loading")
     setFrameError("")
 
-    frameCheckTimerRef.current = window.setTimeout(() => {
-      const hasCanvas = Boolean(frameRef.current?.contentDocument?.querySelector("canvas"))
+    frameCheckIntervalRef.current = window.setInterval(() => {
+      try {
+        const frameWindow = frameRef.current?.contentWindow as
+          | (Window & { roulette?: { isReady?: boolean } })
+          | null
+          | undefined
+        const hasCanvas = Boolean(frameRef.current?.contentDocument?.querySelector("canvas"))
+        const isRouletteReady = Boolean(frameWindow?.roulette?.isReady)
 
-      if (!hasCanvas) {
-        setFrameError("룰렛 엔진 캔버스가 초기화되지 않았습니다. 브라우저 기능이나 벤더 앱 런타임 오류를 확인해야 합니다.")
-        setFrameStatus("error")
+        if (hasCanvas || isRouletteReady) {
+          clearFrameCheckTimers()
+          setFrameStatus("ready")
+          setFrameError("")
+        }
+      } catch {
+        // Ignore transient iframe access errors while the document is still navigating.
       }
-    }, 4000)
+    }, FRAME_READY_POLL_MS)
+
+    frameCheckTimeoutRef.current = window.setTimeout(() => {
+      clearFrameCheckTimers()
+
+      try {
+        const bodyText = frameRef.current?.contentDocument?.body?.innerText?.trim()
+        const fallbackMessage =
+          bodyText && bodyText.length > 0
+            ? `룰렛 iframe은 열렸지만 캔버스가 뜨지 않았습니다. iframe 문서 상태: ${bodyText.slice(0, 120)}`
+            : "룰렛 엔진 캔버스가 초기화되지 않았습니다. 브라우저 캐시가 이전 응답을 잡고 있거나 벤더 앱 런타임 오류가 남아 있을 수 있습니다."
+
+        setFrameError(fallbackMessage)
+      } catch {
+        setFrameError("룰렛 iframe 상태를 읽지 못했습니다. 브라우저가 이전 차단 페이지를 캐시했을 가능성이 있습니다.")
+      }
+
+      setFrameStatus("error")
+    }, FRAME_READY_TIMEOUT_MS)
   }
 
   return (

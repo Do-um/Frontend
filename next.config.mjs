@@ -45,6 +45,11 @@ const embeddableVendorHeaders = [
   ...commonSecurityHeaders,
 ]
 
+const embeddableVendorIndexHeaders = [
+  { key: "Cache-Control", value: "no-store, max-age=0" },
+  ...embeddableVendorHeaders,
+]
+
 const nextConfig = {
   outputFileTracingRoot: __dirname,
   reactStrictMode: true,
@@ -56,6 +61,10 @@ const nextConfig = {
   },
   async headers() {
     return [
+      {
+        source: "/vendor/roulette/index.html",
+        headers: embeddableVendorIndexHeaders,
+      },
       {
         source: "/vendor/roulette/:path*",
         headers: embeddableVendorHeaders,
