@@ -1,14 +1,14 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { AlertTriangle, ExternalLink, LoaderCircle, RefreshCw, Sparkles } from "lucide-react"
+import { AlertTriangle, ExternalLink, LoaderCircle, Maximize2, Minimize2, RefreshCw, Sparkles, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 import { BET_PANEL_CLASS, BET_TINTED_PANEL_CLASS, ScreenHeader } from "../common-ui"
 
-const EMBEDDED_ROULETTE_URL = "/vendor/roulette/index.html?embed=1&v=20260327-2"
+const EMBEDDED_ROULETTE_URL = "/vendor/roulette/index.html?embed=1&v=20260327-3"
 const SOURCE_REPOSITORY_URL = "https://github.com/lazygyu/roulette"
 const LICENSE_URL = "/vendor/roulette/LICENSE.txt"
 const FRAME_READY_TIMEOUT_MS = 15000
@@ -87,6 +87,7 @@ export function RouletteGame({
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle")
   const [saveError, setSaveError] = useState("")
   const [latestResult, setLatestResult] = useState<RouletteGoalMessage | null>(null)
+  const [isExpanded, setIsExpanded] = useState(false)
   const frameRef = useRef<HTMLIFrameElement | null>(null)
   const lastPayloadRef = useRef<AutoRecordPayload | null>(null)
   const handledEventIdsRef = useRef<Set<string>>(new Set())
@@ -104,6 +105,28 @@ export function RouletteGame({
       frameCheckTimeoutRef.current = null
     }
   }
+
+  useEffect(() => {
+    if (!isExpanded) {
+      return
+    }
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsExpanded(false)
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener("keydown", handleKeyDown)
+    }
+  }, [isExpanded])
 
   useEffect(() => {
     function handleMessage(event: MessageEvent<unknown>) {
@@ -235,7 +258,24 @@ export function RouletteGame({
       />
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.18fr)_minmax(320px,0.82fr)]">
-        <div className={`${BET_PANEL_CLASS} overflow-hidden`}>
+        <div className={cn(isExpanded ? "fixed inset-0 z-[90] p-3 sm:p-6" : "")}>
+          {isExpanded ? (
+            <button
+              type="button"
+              aria-label="룰렛 확대 보기 닫기"
+              onClick={() => setIsExpanded(false)}
+              className="absolute inset-0 bg-[#1f2730]/42 backdrop-blur-[2px]"
+            />
+          ) : null}
+
+          <div
+            className={cn(
+              `${BET_PANEL_CLASS} overflow-hidden`,
+              isExpanded
+                ? "relative z-[1] flex h-full w-full flex-col rounded-[32px] border-white/75 shadow-[0_32px_90px_rgba(24,39,54,0.24)]"
+                : "",
+            )}
+          >
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#d7e5ee] bg-[linear-gradient(135deg,rgba(255,255,255,0.9),rgba(234,243,248,0.84))] px-5 py-4 text-[#1f2730]">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7b8f99]">Embedded Vendor App</p>
@@ -243,6 +283,15 @@ export function RouletteGame({
             </div>
 
             <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsExpanded((current) => !current)}
+                className="h-10 rounded-full border-[#d7e5ee] bg-white/82 px-4 text-[#355264] hover:bg-[#f5fbfe]"
+              >
+                {isExpanded ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
+                {isExpanded ? "축소" : "확대 보기"}
+              </Button>
               <Button
                 type="button"
                 variant="outline"
@@ -263,10 +312,21 @@ export function RouletteGame({
                   <ExternalLink className="size-4" />
                 </a>
               </Button>
+              {isExpanded ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsExpanded(false)}
+                  className="h-10 rounded-full border-[#d7e5ee] bg-white/82 px-4 text-[#355264] hover:bg-[#f5fbfe]"
+                >
+                  <X className="size-4" />
+                  닫기
+                </Button>
+              ) : null}
             </div>
           </div>
 
-          <div className="relative bg-[#edf3f6]">
+          <div className={cn("relative bg-[#edf3f6]", isExpanded ? "flex-1" : "")}>
             {frameStatus === "loading" || frameStatus === "error" ? (
               <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-[linear-gradient(180deg,rgba(237,243,246,0.82),rgba(237,243,246,0.56))]">
                 <div className="rounded-[26px] border border-white/80 bg-white/82 px-5 py-4 text-center text-[#1f2730] shadow-[0_18px_40px_rgba(47,74,91,0.12)] backdrop-blur-sm">
@@ -291,9 +351,10 @@ export function RouletteGame({
               src={EMBEDDED_ROULETTE_URL}
               title="lazygyu Marble Roulette"
               onLoad={handleFrameLoad}
-              className="block h-[980px] w-full border-0 bg-white"
+              className={cn("block w-full border-0 bg-white", isExpanded ? "h-full min-h-[420px]" : "h-[980px]")}
             />
           </div>
+        </div>
         </div>
 
         <div className="space-y-4">
