@@ -258,13 +258,13 @@ export function RouletteGame({
       />
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.18fr)_minmax(320px,0.82fr)]">
-        <div className={cn(isExpanded ? "fixed inset-0 z-[90] p-3 sm:p-6" : "")}>
+        <div className={cn(isExpanded ? "fixed inset-0 z-[90] overflow-y-auto p-3 sm:p-6" : "")}>
           {isExpanded ? (
             <button
               type="button"
               aria-label="룰렛 확대 보기 닫기"
               onClick={() => setIsExpanded(false)}
-              className="absolute inset-0 bg-[#1f2730]/42 backdrop-blur-[2px]"
+              className="fixed inset-0 bg-[#1f2730]/42 backdrop-blur-[2px]"
             />
           ) : null}
 
@@ -272,89 +272,92 @@ export function RouletteGame({
             className={cn(
               `${BET_PANEL_CLASS} overflow-hidden`,
               isExpanded
-                ? "relative z-[1] flex h-full w-full flex-col rounded-[32px] border-white/75 shadow-[0_32px_90px_rgba(24,39,54,0.24)]"
+                ? "relative z-[1] mx-auto flex w-full max-w-[1680px] flex-col rounded-[32px] border-white/75 shadow-[0_32px_90px_rgba(24,39,54,0.24)]"
                 : "",
             )}
           >
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#d7e5ee] bg-[linear-gradient(135deg,rgba(255,255,255,0.9),rgba(234,243,248,0.84))] px-5 py-4 text-[#1f2730]">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7b8f99]">Embedded Vendor App</p>
-              <p className="mt-2 text-lg font-black tracking-tight">lazygyu Marble Roulette</p>
-            </div>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#d7e5ee] bg-[linear-gradient(135deg,rgba(255,255,255,0.9),rgba(234,243,248,0.84))] px-5 py-4 text-[#1f2730]">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7b8f99]">Embedded Vendor App</p>
+                <p className="mt-2 text-lg font-black tracking-tight">lazygyu Marble Roulette</p>
+              </div>
 
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsExpanded((current) => !current)}
-                className="h-10 rounded-full border-[#d7e5ee] bg-white/82 px-4 text-[#355264] hover:bg-[#f5fbfe]"
-              >
-                {isExpanded ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
-                {isExpanded ? "축소" : "확대 보기"}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleReloadFrame}
-                className="h-10 rounded-full border-[#d7e5ee] bg-white/82 px-4 text-[#355264] hover:bg-[#f5fbfe]"
-              >
-                <RefreshCw className="size-4" />
-                다시 불러오기
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                asChild
-                className="h-10 rounded-full border-[#d7e5ee] bg-white/82 px-4 text-[#355264] hover:bg-[#f5fbfe]"
-              >
-                <a href={EMBEDDED_ROULETTE_URL} target="_blank" rel="noreferrer">
-                  새 탭
-                  <ExternalLink className="size-4" />
-                </a>
-              </Button>
-              {isExpanded ? (
+              <div className="flex flex-wrap gap-2">
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setIsExpanded(false)}
+                  onClick={() => setIsExpanded((current) => !current)}
                   className="h-10 rounded-full border-[#d7e5ee] bg-white/82 px-4 text-[#355264] hover:bg-[#f5fbfe]"
                 >
-                  <X className="size-4" />
-                  닫기
+                  {isExpanded ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
+                  {isExpanded ? "축소" : "확대 보기"}
                 </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleReloadFrame}
+                  className="h-10 rounded-full border-[#d7e5ee] bg-white/82 px-4 text-[#355264] hover:bg-[#f5fbfe]"
+                >
+                  <RefreshCw className="size-4" />
+                  다시 불러오기
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  asChild
+                  className="h-10 rounded-full border-[#d7e5ee] bg-white/82 px-4 text-[#355264] hover:bg-[#f5fbfe]"
+                >
+                  <a href={EMBEDDED_ROULETTE_URL} target="_blank" rel="noreferrer">
+                    새 탭
+                    <ExternalLink className="size-4" />
+                  </a>
+                </Button>
+                {isExpanded ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsExpanded(false)}
+                    className="h-10 rounded-full border-[#d7e5ee] bg-white/82 px-4 text-[#355264] hover:bg-[#f5fbfe]"
+                  >
+                    <X className="size-4" />
+                    닫기
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="relative bg-[#edf3f6]">
+              {frameStatus === "loading" || frameStatus === "error" ? (
+                <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-[linear-gradient(180deg,rgba(237,243,246,0.82),rgba(237,243,246,0.56))]">
+                  <div className="rounded-[26px] border border-white/80 bg-white/82 px-5 py-4 text-center text-[#1f2730] shadow-[0_18px_40px_rgba(47,74,91,0.12)] backdrop-blur-sm">
+                    {frameStatus === "error" ? (
+                      <AlertTriangle className="mx-auto size-6 text-[#8a5750]" />
+                    ) : (
+                      <LoaderCircle className="mx-auto size-6 animate-spin text-[#567289]" />
+                    )}
+                    <p className="mt-3 text-sm font-semibold">
+                      {frameStatus === "error" ? "룰렛 앱 로딩에 실패했습니다." : "룰렛 앱을 준비하는 중입니다."}
+                    </p>
+                    {frameStatus === "error" ? (
+                      <p className="mt-2 max-w-[360px] text-sm leading-6 text-[#677680]">{frameError}</p>
+                    ) : null}
+                  </div>
+                </div>
               ) : null}
+
+              <iframe
+                ref={frameRef}
+                key={frameKey}
+                src={EMBEDDED_ROULETTE_URL}
+                title="lazygyu Marble Roulette"
+                onLoad={handleFrameLoad}
+                className={cn(
+                  "block w-full border-0 bg-white",
+                  isExpanded ? "h-[980px] sm:h-[1180px] lg:h-[1320px] xl:h-[1460px]" : "h-[980px]",
+                )}
+              />
             </div>
           </div>
-
-          <div className={cn("relative bg-[#edf3f6]", isExpanded ? "flex-1" : "")}>
-            {frameStatus === "loading" || frameStatus === "error" ? (
-              <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-[linear-gradient(180deg,rgba(237,243,246,0.82),rgba(237,243,246,0.56))]">
-                <div className="rounded-[26px] border border-white/80 bg-white/82 px-5 py-4 text-center text-[#1f2730] shadow-[0_18px_40px_rgba(47,74,91,0.12)] backdrop-blur-sm">
-                  {frameStatus === "error" ? (
-                    <AlertTriangle className="mx-auto size-6 text-[#8a5750]" />
-                  ) : (
-                    <LoaderCircle className="mx-auto size-6 animate-spin text-[#567289]" />
-                  )}
-                  <p className="mt-3 text-sm font-semibold">
-                    {frameStatus === "error" ? "룰렛 앱 로딩에 실패했습니다." : "룰렛 앱을 준비하는 중입니다."}
-                  </p>
-                  {frameStatus === "error" ? (
-                    <p className="mt-2 max-w-[360px] text-sm leading-6 text-[#677680]">{frameError}</p>
-                  ) : null}
-                </div>
-              </div>
-            ) : null}
-
-            <iframe
-              ref={frameRef}
-              key={frameKey}
-              src={EMBEDDED_ROULETTE_URL}
-              title="lazygyu Marble Roulette"
-              onLoad={handleFrameLoad}
-              className={cn("block w-full border-0 bg-white", isExpanded ? "h-full min-h-[420px]" : "h-[980px]")}
-            />
-          </div>
-        </div>
         </div>
 
         <div className="space-y-4">

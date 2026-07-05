@@ -24,7 +24,7 @@
   - Comma, space, or newline separated email list.
 
 ## Notes
-- The OAuth callback route is implemented at `app/auth/callback/route.ts`.
+- The OAuth callback route is implemented at `src/app/auth/callback/route.ts`.
 - Login button starts Supabase Google OAuth directly and exchanges the PKCE code on the server.
 - The callback route also syncs the `users` profile server-side, so admin/member bootstrap no longer depends on browser env values.
 - Auth state is refreshed through `proxy.ts`, so production should keep the Supabase env configured on Vercel.

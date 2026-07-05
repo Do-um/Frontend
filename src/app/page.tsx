@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react"
 import { PencilLine, Plus, Trash2 } from "lucide-react"
 
 import { MarkdownContent } from "@/components/common/markdown-content"
+import { VolunteerRegionMapSection } from "@/components/home/volunteer-region-map-section"
 import { HeaderNav } from "@/components/header-nav"
 import { SiteFooter } from "@/components/site-footer"
 import { Button } from "@/components/ui/button"
@@ -476,6 +477,8 @@ export default function Home() {
                 ))}
               </div>
             </div>
+
+            <VolunteerRegionMapSection />
           </div>
         </div>
       </section>
